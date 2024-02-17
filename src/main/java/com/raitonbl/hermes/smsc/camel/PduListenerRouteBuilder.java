@@ -45,7 +45,6 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
 
     private final ObjectMapper ObjectMapper = new ObjectMapper();
 
-
     @Override
     public void configure() throws Exception {
         from("direct:" + ROUTE_ID)
@@ -54,7 +53,7 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
                 .choice()
                 .when(header(SmppConstants.MESSAGE_TYPE).isEqualTo("DeliverSm"))
                     .log(LoggingLevel.WARN, UNSUPPORTED_PDU_EVENT)
-                    .to("direct:" + UnsupportedPduEventRouteBuilder.ROUTE_ID)
+                    .to("direct:" + MessagingRouteBuilder.UNSUPPORTED_PDU_EVENT_ROUTE)
                     .removeHeaders("*")
                 .otherwise()
                     .choice()
@@ -63,16 +62,16 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
                         .process(this::toSmsRequest)
                         .log(LoggingLevel.DEBUG, PDU_CONVERTED_INTO_RECEIVED_SMS)
                         .removeHeaders("*")
-                        .to("direct:" + ReceiveSmsPduEventRouteBuilder.ROUTE_ID)
+                        .to("direct:" + MessagingRouteBuilder.RECEIVED_SMS_REQUEST_ROUTE)
                     .when(header(SmppConstants.ESM_CLASS).isEqualTo(0x04))
                         .log(LoggingLevel.INFO, RECEIVED_SMS_PDU_EVENT)
                         .process(this::toSmsDeliveryRequest)
                         .log(LoggingLevel.DEBUG, PDU_CONVERTED_INTO_DELIVERED_SMS)
                         .removeHeaders("*")
-                        .to("direct:" + ReceiveSmsPduEventRouteBuilder.ROUTE_ID)
+                        .to("direct:" + MessagingRouteBuilder.DELIVERY_RECEIPT_ROUTE)
                     .otherwise()
                         .log(LoggingLevel.WARN, UNSUPPORTED_PDU_EVENT_WITH_ESM_CLASS)
-                        .to("direct:" + UnsupportedPduEventRouteBuilder.ROUTE_ID)
+                        .to("direct:" +MessagingRouteBuilder.UNSUPPORTED_PDU_EVENT_ROUTE)
                     .endChoice()
                 .endChoice()
                 .removeHeaders("*")
