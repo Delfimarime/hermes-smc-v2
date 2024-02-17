@@ -3,23 +3,35 @@ package com.raitonbl.hermes.smsc.camel;
 import lombok.Builder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.Predicate;
-import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
-import org.apache.camel.component.smpp.SmppMessage;
 
 @Builder
 public abstract class PduListenerRouteBuilder extends RouteBuilder {
     public static final String ROUTE_ID = "HERMES_SMSC_PDU_LISTENER";
     public static final String DIRECT_TO = "direct:" + ROUTE_ID;
-
     public final static String UNSUPPORTED_PDU_EVENT = String.format(
             "PduEvent{type:${headers.%s} , source:${headers.%s},id:${headers.%s}, state:${headers.%s} } isn't supported",
             SmppConstants.MESSAGE_TYPE, Constants.MESSAGE_RECEIVED_BY, SmppConstants.ID, SmppConstants.MESSAGE_STATE
     );
     public final static String UNSUPPORTED_PDU_EVENT_WITH_ESM_CLASS = String.format(
             "PduEvent{type:${headers.%s} , source:${headers.%s},id:${headers.%s}, state:${headers.%s}, esmClass:${headers.%s} } isn't supported",
+            SmppConstants.MESSAGE_TYPE, Constants.MESSAGE_RECEIVED_BY, SmppConstants.ID, SmppConstants.MESSAGE_STATE,SmppConstants.ESM_CLASS
+    );
+    public final static String RECEIVED_SMS_PDU_EVENT = String.format(
+            "PduEvent{type:${headers.%s} , source:${headers.%s},id:${headers.%s}, state:${headers.%s}, esmClass:${headers.%s} } recognized as ReceivedSms",
+            SmppConstants.MESSAGE_TYPE, Constants.MESSAGE_RECEIVED_BY, SmppConstants.ID, SmppConstants.MESSAGE_STATE,SmppConstants.ESM_CLASS
+    );
+    public final static String SMS_DELIVERY_PDU_EVENT = String.format(
+            "PduEvent{type:${headers.%s} , source:${headers.%s},id:${headers.%s}, state:${headers.%s}, esmClass:${headers.%s} } recognized as SmsDelivery",
+            SmppConstants.MESSAGE_TYPE, Constants.MESSAGE_RECEIVED_BY, SmppConstants.ID, SmppConstants.MESSAGE_STATE,SmppConstants.ESM_CLASS
+    );
+    public final static String PDU_CONVERTED_INTO_RECEIVED_SMS = String.format(
+            "PduEvent{type:${headers.%s} , source:${headers.%s},id:${headers.%s}, state:${headers.%s}, esmClass:${headers.%s} } converted into ReceivedSms",
+            SmppConstants.MESSAGE_TYPE, Constants.MESSAGE_RECEIVED_BY, SmppConstants.ID, SmppConstants.MESSAGE_STATE,SmppConstants.ESM_CLASS
+    );
+    public final static String PDU_CONVERTED_INTO_DELIVERED_SMS = String.format(
+            "PduEvent{type:${headers.%s} , source:${headers.%s},id:${headers.%s}, state:${headers.%s}, esmClass:${headers.%s} } converted into SmsDelivery",
             SmppConstants.MESSAGE_TYPE, Constants.MESSAGE_RECEIVED_BY, SmppConstants.ID, SmppConstants.MESSAGE_STATE,SmppConstants.ESM_CLASS
     );
 
@@ -31,22 +43,28 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
                 .choice()
                 .when(header(SmppConstants.MESSAGE_TYPE).isEqualTo("DeliverSm"))
                     .log(LoggingLevel.WARN, UNSUPPORTED_PDU_EVENT)
-                    //TODO SEND TO PDU_EVENT_QUEUE
+                    .to("direct:" + UnsupportedPduEventRouteBuilder.ROUTE_ID)
                     .removeHeaders("*")
                 .otherwise()
                     .choice()
                     .when(header(SmppConstants.ESM_CLASS).isEqualTo(0x00))
+                        .log(LoggingLevel.INFO,RECEIVED_SMS_PDU_EVENT)
                         .process(this::toSmsRequest)
-                        .to("seda:specialQueue")
+                        .log(LoggingLevel.DEBUG, PDU_CONVERTED_INTO_RECEIVED_SMS)
+                        .removeHeaders("*")
+                        .to("direct:" + ReceiveSmsPduEventRouteBuilder.ROUTE_ID)
                     .when(header(SmppConstants.ESM_CLASS).isEqualTo(0x04))
+                        .log(LoggingLevel.INFO,RECEIVED_SMS_PDU_EVENT)
                         .process(this::toSmsDeliveryRequest)
-                        .to("seda:specialQueue")
+                        .log(LoggingLevel.DEBUG, PDU_CONVERTED_INTO_DELIVERED_SMS)
+                        .removeHeaders("*")
+                        .to("direct:" + ReceiveSmsPduEventRouteBuilder.ROUTE_ID)
                     .otherwise()
                         .log(LoggingLevel.WARN, UNSUPPORTED_PDU_EVENT_WITH_ESM_CLASS)
-                        //TODO SEND TO PDU_EVENT_QUEUE
+                        .to("direct:" + UnsupportedPduEventRouteBuilder.ROUTE_ID)
                     .endChoice()
                 .endChoice()
-                .removeHeader("*")
+                .removeHeaders("*")
                 .end()
         ;
     }
