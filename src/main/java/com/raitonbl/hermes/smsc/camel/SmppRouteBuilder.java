@@ -36,7 +36,7 @@ public class SmppRouteBuilder extends RouteBuilder {
                     .id(redirectTo.toUpperCase())
                     .routeId(redirectTo)
                     .routeDescription("")
-                    .setHeader(Constants.MESSAGE_RECEIVED_BY, simple(this.name))
+                    .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(this.name))
                     .to(PduListenerRouteBuilder.DIRECT_TO)
                     .end();
             targetConfiguration = configuration.clone();
@@ -51,7 +51,7 @@ public class SmppRouteBuilder extends RouteBuilder {
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
                 .to(targetConfiguration.toCamelURI())
                 .routeDescription(String.format("Sends an PDU to %s Short message service center", this.name))
-                .setHeader(Constants.MESSAGE_RECEIVED_BY, simple(this.name))
+                .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(this.name))
                 .end();
     }
 
@@ -59,9 +59,9 @@ public class SmppRouteBuilder extends RouteBuilder {
         from(configuration.toCamelURI())
                 .routeId(String.format(RECEIVER_ROUTE_ID_FORMAT, this.name).toUpperCase())
                 .routeDescription(String.format("Listens to an PDU from %s Short message service center", this.name))
-                .setHeader(Constants.MESSAGE_RECEIVED_BY, simple(this.name))
+                .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(this.name))
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
-                .removeHeaders("*",Constants.MESSAGE_RECEIVED_BY)
+                .removeHeaders("*", HermesConstants.MESSAGE_RECEIVED_BY)
                 .to(PduListenerRouteBuilder.DIRECT_TO)
                 .end();
     }
