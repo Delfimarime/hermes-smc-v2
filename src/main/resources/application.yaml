@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: ${HERMES_SERVER_NAME:hermes-smsc-svc}
+  boot:
+    admin:
+      client:
+        enabled: ${HERMES_SERVER_SPRING_BOOT_CLIENT_ENABLED:false}
+        instance:
+          name: ${HERMES_SERVER_NAME:hermes-smsc-svc}
+        url: ${HERMES_SERVER_SPRING_BOOT_CLIENT_URL:http://localhost:3000}
+  cloud:
+    discovery:
+      enabled: ${HERMES_SERVER_SPRING_CLOUD_DISCOVERY_ENABLED:false}
+eureka:
+  client:
+    service-url:
+      default-Zone: ${HERMES_SERVER_EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
