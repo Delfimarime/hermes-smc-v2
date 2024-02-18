@@ -51,13 +51,18 @@
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-spring-rabbitmq</artifactId>
 			<version>3.14.0</version>
-			<!-- use the same version as your Camel core version -->
 		</dependency>
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-aws2-sqs</artifactId>
 			<version>${camel.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-jackson</artifactId>
+			<version>${camel.version}</version>
+		</dependency>
+
 
 
 
