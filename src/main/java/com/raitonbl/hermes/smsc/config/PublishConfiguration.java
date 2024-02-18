@@ -22,30 +22,6 @@ public class PublishConfiguration {
     private MessagingSystem deliveryReceiptChannel;
 
     public String toCamelURI(MessagingSystem target) {
-        AtomicBoolean isFirst = new AtomicBoolean(true);
-        StringBuilder sb = new StringBuilder();
-        switch (type) {
-            case AWS_SQS -> {
-                String name = target.getQueue();
-                if (name == null) {
-                    name = target.getArn();
-                }
-                sb.append("aws2-sqs://").append(name);
-                ConfigurationUtils.setParameter(sb, isFirst, "useDefaultCredentialsProvider", true);
-                if (target.getRegion() != null) {
-                    ConfigurationUtils.setParameter(sb, isFirst, "region", target.getRegion());
-                }
-                ConfigurationUtils.setParameter(sb, isFirst, "operation", "sendBatchMessage");
-                ConfigurationUtils.setParameter(sb, isFirst, "amazonSQSClient", "#amazonSQSClient");
-            }
-            case RABBITMQ -> {
-                sb.append("spring-rabbitmq:").append(target.getExchange());
-                ConfigurationUtils.setParameter(sb, isFirst, "routingKey", target.getRoutingKey());
-                ConfigurationUtils.setParameter(sb, isFirst, "connectionFactory", "#connectionFactory");
-            }
-            default -> throw new IllegalArgumentException(this.type + " isn't supported");
-        }
-
-        return sb.toString();
+        return MessagingSystem.camelURIFrom(type, target);
     }
 }
