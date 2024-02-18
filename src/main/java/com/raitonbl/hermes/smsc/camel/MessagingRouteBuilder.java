@@ -1,15 +1,42 @@
 package com.raitonbl.hermes.smsc.camel;
 
+import com.raitonbl.hermes.smsc.config.HermesConfiguration;
+import com.raitonbl.hermes.smsc.config.PublishConfiguration;
+import com.raitonbl.hermes.smsc.config.messaging.MessagingSystem;
+import lombok.Setter;
 import org.apache.camel.builder.RouteBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Setter
+@Component
 public class MessagingRouteBuilder extends RouteBuilder {
-    public static final String DELIVERY_RECEIPT_ROUTE = "HERMES_SMSC_DELIVERY_RECEIPT_LISTENER";
-    public static final String RECEIVED_SMS_REQUEST_ROUTE = "HERMES_SMSC_RECEIVED_SMS_LISTENER";
-    public static final String UNSUPPORTED_PDU_EVENT_ROUTE = "HERMES_SMSC_UNSUPPORTED_PDU_LISTENER";
+
+    HermesConfiguration configuration;
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
+        setRoute(MessagingRouteType.DELIVERY_RECEIPT_ROUTE,
+                configuration.getPublishTo(), configuration.getPublishTo().getDeliveryReceiptChannel());
+        setRoute(MessagingRouteType.RECEIVED_SMS_REQUEST_ROUTE,
+                configuration.getPublishTo(), configuration.getPublishTo().getReceivedSmsChannel());
+        setRoute(MessagingRouteType.UNSUPPORTED_PDU_EVENT_ROUTE,
+                configuration.getPublishTo(), configuration.getPublishTo().getUnsupportedPduChannel());
+    }
 
+    private void setRoute(MessagingRouteType type, PublishConfiguration configuration, MessagingSystem ms) {
+        from("direct:" + type.routeId)
+                .routeId(type.routeId)
+                .routeDescription(String.format("Publishes %s events into %s",
+                        type.eventType, configuration.getType()).toLowerCase())
+                .to(configuration.toCamelURI(ms))
+                .removeHeaders("*")
+                .end();
+    }
+
+    @Autowired
+    public void setConfiguration(HermesConfiguration configuration) {
+        this.configuration = configuration;
     }
 
 }

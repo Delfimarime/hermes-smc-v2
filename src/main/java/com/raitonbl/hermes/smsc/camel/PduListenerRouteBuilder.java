@@ -3,19 +3,19 @@ package com.raitonbl.hermes.smsc.camel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.asyncapi.ReceivedSmsRequest;
 import com.raitonbl.hermes.smsc.asyncapi.SmsDeliveryReceipt;
-import lombok.Builder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.jsmpp.util.DeliveryReceiptState;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
 
-@Builder
-public abstract class PduListenerRouteBuilder extends RouteBuilder {
+@Component
+public  class PduListenerRouteBuilder extends RouteBuilder {
     public static final String ROUTE_ID = "HERMES_SMSC_PDU_LISTENER";
     public static final String DIRECT_TO = "direct:" + ROUTE_ID;
     public final static String UNSUPPORTED_PDU_EVENT = String.format(
@@ -53,7 +53,7 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
                 .choice()
                 .when(header(SmppConstants.MESSAGE_TYPE).isEqualTo("DeliverSm"))
                     .log(LoggingLevel.WARN, UNSUPPORTED_PDU_EVENT)
-                    .to("direct:" + MessagingRouteBuilder.UNSUPPORTED_PDU_EVENT_ROUTE)
+                    .to("direct:" +  MessagingRouteType.UNSUPPORTED_PDU_EVENT_ROUTE.routeId)
                     .removeHeaders("*")
                 .otherwise()
                     .choice()
@@ -62,16 +62,16 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
                         .process(this::toSmsRequest)
                         .log(LoggingLevel.DEBUG, PDU_CONVERTED_INTO_RECEIVED_SMS)
                         .removeHeaders("*")
-                        .to("direct:" + MessagingRouteBuilder.RECEIVED_SMS_REQUEST_ROUTE)
+                        .to("direct:" + MessagingRouteType.RECEIVED_SMS_REQUEST_ROUTE.routeId)
                     .when(header(SmppConstants.ESM_CLASS).isEqualTo(0x04))
                         .log(LoggingLevel.INFO, RECEIVED_SMS_PDU_EVENT)
                         .process(this::toSmsDeliveryRequest)
                         .log(LoggingLevel.DEBUG, PDU_CONVERTED_INTO_DELIVERED_SMS)
                         .removeHeaders("*")
-                        .to("direct:" + MessagingRouteBuilder.DELIVERY_RECEIPT_ROUTE)
+                        .to("direct:" +  MessagingRouteType.DELIVERY_RECEIPT_ROUTE.routeId)
                     .otherwise()
                         .log(LoggingLevel.WARN, UNSUPPORTED_PDU_EVENT_WITH_ESM_CLASS)
-                        .to("direct:" +MessagingRouteBuilder.UNSUPPORTED_PDU_EVENT_ROUTE)
+                        .to("direct:" + MessagingRouteType.UNSUPPORTED_PDU_EVENT_ROUTE.routeId)
                     .endChoice()
                 .endChoice()
                 .removeHeaders("*")
@@ -89,7 +89,7 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
         target.setSourceAddr(exchange.getIn().getHeader(SmppConstants.SOURCE_ADDR, String.class));
         target.setSmpp(exchange.getIn().getHeader(HermesConstants.MESSAGE_RECEIVED_BY, String.class));
         exchange.getIn().removeHeaders("*");
-        exchange.getIn().setBody(ObjectMapper.writeValueAsBytes(target));
+        exchange.getIn().setBody(simple(ObjectMapper.writeValueAsString(target)));
     }
 
     public void toSmsDeliveryRequest(Exchange exchange) throws Exception {
@@ -104,7 +104,7 @@ public abstract class PduListenerRouteBuilder extends RouteBuilder {
         target.setLastAttemptAt(exchange.getIn().getHeader(SmppConstants.DONE_DATE, Date.class).toInstant()
                 .atZone(ZoneId.systemDefault()).toLocalDateTime());
         exchange.getIn().removeHeaders("*");
-        exchange.getIn().setBody(ObjectMapper.writeValueAsBytes(target));
+        exchange.getIn().setBody(simple(ObjectMapper.writeValueAsString(target)));
     }
 
 }
