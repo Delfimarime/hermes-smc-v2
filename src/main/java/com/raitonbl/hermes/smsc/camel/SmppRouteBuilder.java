@@ -5,12 +5,10 @@ import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConnectionType;
 import jakarta.inject.Inject;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 
 @Builder
-@RequiredArgsConstructor
 public class SmppRouteBuilder extends RouteBuilder {
     public static final String RECEIVER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_RECEIVER_CONNECTION";
     public static final String TRANSCEIVER_CALLBACK_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CALLBACK";
