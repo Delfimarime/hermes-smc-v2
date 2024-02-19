@@ -8,6 +8,18 @@ spring:
         instance:
           name: ${HERMES_SERVER_NAME:hermes-smsc-svc}
         url: ${HERMES_SERVER_SPRING_BOOT_CLIENT_URL:http://localhost:3000}
+    hermes:
+      listen-to:
+        type: AWS_SQS
+        queue: send-sms-queue
+      publish-to:
+        type: AWS_SQS
+        received-sms-channel:
+          queue: received-sms-queue
+        unsupported-pdu-channel:
+          queue: unsupported-pdu-queue
+        delivery-receipt-channel:
+          queue: delivery-receipt-queue
   cloud:
     discovery:
       enabled: ${HERMES_SERVER_SPRING_CLOUD_DISCOVERY_ENABLED:false}

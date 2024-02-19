@@ -34,27 +34,24 @@ public class SmppRouteBuilder extends RouteBuilder {
 
     private void setTransmitterEndpoint(SmppConfiguration configuration, String name) {
         SmppConfiguration targetConfiguration = configuration;
-        String routeId = null;
         if (configuration.getSmppConnectionType() == SmppConnectionType.TRANSCEIVER) {
             String redirectTo = String.format(TRANSCEIVER_CALLBACK_FORMAT, name);
             from("direct:" + redirectTo)
                     .id(redirectTo.toUpperCase())
                     .routeId(redirectTo)
-                    .routeDescription("")
                     .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
                     .to(PduListenerRouteBuilder.DIRECT_TO)
                     .end();
             targetConfiguration = configuration.clone();
             targetConfiguration.setRedirectTo(redirectTo);
-            routeId = String.format(TRANSCEIVER_CALLBACK_FORMAT, name);
+           // routeId = String.format(TRANSCEIVER_ROUTE_ID_FORMAT, name);
         }
-        if (routeId == null) {
-            routeId = String.format(TRANSMITTER_ROUTE_ID_FORMAT, name);
-        }
-        from("direct:" + routeId)
+        String routeId = String.format(TRANSMITTER_ROUTE_ID_FORMAT, name);
+        from("direct:" + TRANSMITTER_ROUTE_ID_FORMAT)
                 .routeId(routeId.toUpperCase())
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
                 .to(targetConfiguration.toCamelURI())
+                .removeHeader(SmppConstants.PASSWORD)
                 .routeDescription(String.format("Sends an PDU to %s Short message service center", name))
                 .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
                 .end();

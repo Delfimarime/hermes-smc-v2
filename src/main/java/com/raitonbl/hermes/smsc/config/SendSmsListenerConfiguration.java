@@ -12,12 +12,10 @@ import lombok.Setter;
 public class SendSmsListenerConfiguration extends MessagingSystem {
     @NotNull
     private MessageSystemType type;
-
     private Long visibilityTimeout;
     private Integer maxMessagesPerPoll;
     private Integer concurrentConsumers;
     private Integer receiveMessageWaitTimeSeconds;
-
 
     public String toCamelURI() {
         return MessagingSystem.camelURIFrom(type, this, (sb, isFirst) -> {
