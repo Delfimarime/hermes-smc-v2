@@ -5,12 +5,14 @@ import com.raitonbl.hermes.smsc.config.messaging.MessageSystemType;
 import com.raitonbl.hermes.smsc.config.messaging.MessagingSystem;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class PublishConfiguration {
     @NotNull
     private MessageSystemType type;

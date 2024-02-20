@@ -16,8 +16,7 @@ public class BeanFactory {
     @Bean("amazonSQSClient")
     public SqsClient getSqsClient() {
         Region region = Optional.ofNullable(System.getenv("DEFAULT_AWS_REGION"))
-                .map(Region::of)
-                .orElseGet(()->Region.AF_SOUTH_1);
+                .map(Region::of).orElse(Region.AF_SOUTH_1);
         SqsClientBuilder builder = SqsClient.builder().region(region)
                 .credentialsProvider(DefaultCredentialsProvider.create());
         Optional.ofNullable(System.getenv("AWS_ENDPOINT_URL"))

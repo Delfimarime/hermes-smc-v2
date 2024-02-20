@@ -1,7 +1,5 @@
 package com.raitonbl.hermes.smsc.camel;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConnectionType;
@@ -9,8 +7,10 @@ import jakarta.inject.Inject;
 import lombok.Builder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
+import org.springframework.stereotype.Component;
 
 @Builder
+@Component
 public class SmppRouteBuilder extends RouteBuilder {
     public static final String RECEIVER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_RECEIVER_CONNECTION";
     public static final String TRANSCEIVER_CALLBACK_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CALLBACK";
@@ -44,12 +44,11 @@ public class SmppRouteBuilder extends RouteBuilder {
                     .end();
             targetConfiguration = configuration.clone();
             targetConfiguration.setRedirectTo(redirectTo);
-           // routeId = String.format(TRANSCEIVER_ROUTE_ID_FORMAT, name);
         }
         String routeId = String.format(TRANSMITTER_ROUTE_ID_FORMAT, name);
-        from("direct:" + TRANSMITTER_ROUTE_ID_FORMAT)
+        from("direct:" + routeId)
                 .routeId(routeId.toUpperCase())
-                .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
+                //.setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
                 .to(targetConfiguration.toCamelURI())
                 .removeHeader(SmppConstants.PASSWORD)
                 .routeDescription(String.format("Sends an PDU to %s Short message service center", name))

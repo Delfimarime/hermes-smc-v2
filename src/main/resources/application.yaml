@@ -21,11 +21,14 @@ spring:
         delivery-receipt-channel:
           queue: delivery-receipt-queue
       services:
-        default:
+        DEFAULT:
           port: 2775
           hostname: localhost
           username: transmitter
           password: admin
+          system-id: transmitter
+          smpp-connection-type: TRANSMITTER
+          verify-tls: false
 
   cloud:
     discovery:
@@ -38,3 +41,8 @@ eureka:
 camel:
   springboot:
     main-run-controller: true
+
+management:
+  health:
+    rabbit:
+      enabled: false

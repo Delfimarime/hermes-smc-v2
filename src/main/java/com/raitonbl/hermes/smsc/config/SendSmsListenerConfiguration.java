@@ -5,10 +5,12 @@ import com.raitonbl.hermes.smsc.config.messaging.MessageSystemType;
 import com.raitonbl.hermes.smsc.config.messaging.MessagingSystem;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class SendSmsListenerConfiguration extends MessagingSystem {
     @NotNull
     private MessageSystemType type;

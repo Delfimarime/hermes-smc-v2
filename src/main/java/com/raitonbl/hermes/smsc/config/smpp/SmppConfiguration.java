@@ -21,7 +21,7 @@ public class SmppConfiguration implements Cloneable {
     @NotEmpty
     private SmppConnectionType smppConnectionType;
     private String port;
-    private Boolean useSSL;
+    private Boolean verifyTls;
     private String username;
     private String password;
     @NotNull
@@ -61,7 +61,7 @@ public class SmppConfiguration implements Cloneable {
         }
         this.npi = from.npi;
         this.port = from.port;
-        this.useSSL = from.useSSL;
+        this.verifyTls = from.verifyTls;
         this.username = from.username;
         this.password = from.password;
         this.hostname = from.hostname;
@@ -93,6 +93,7 @@ public class SmppConfiguration implements Cloneable {
     public String toCamelURI() {
         AtomicBoolean isFirst = new AtomicBoolean(true);
         StringBuilder sb = new StringBuilder();
+        sb.append("smpp://");
         if (username != null) {
             sb.append(username).append("@");
         }
@@ -100,21 +101,23 @@ public class SmppConfiguration implements Cloneable {
         if (port != null) {
             sb.append(":").append(port);
         }
+        //TEMPORARY
+        ConfigurationUtils.setParameter(sb, isFirst, "password", getPassword());
+
         ConfigurationUtils.setParameter(sb, isFirst, "npi", npi);
         ConfigurationUtils.setParameter(sb, isFirst, "encoding", encoding);
+        ConfigurationUtils.setParameter(sb, isFirst, "systemId", systemId);
         ConfigurationUtils.setParameter(sb, isFirst, "dataCoding", dataCoding);
         ConfigurationUtils.setParameter(sb, isFirst, "systemType", systemType);
         ConfigurationUtils.setParameter(sb, isFirst, "sourceAddr", sourceAddr);
         ConfigurationUtils.setParameter(sb, isFirst, "sourceAddrNpi", sourceAddrNpi);
         ConfigurationUtils.setParameter(sb, isFirst, "sourceAddrTon", sourceAddrTon);
         ConfigurationUtils.setParameter(sb, isFirst, "maxReconnect", maxReconnect);
-        ConfigurationUtils.setParameter(sb, isFirst, "useSSL", useSSL, true);
+        ConfigurationUtils.setParameter(sb, isFirst, "useSSL", verifyTls, true);
         ConfigurationUtils.setParameter(sb, isFirst, "reconnectDelay", reconnectDelay);
-        ConfigurationUtils.setParameter(sb, isFirst, "systemId", Optional.of(systemId));
         ConfigurationUtils.setParameter(sb, isFirst, "transactionTimer", transactionTimer);
         ConfigurationUtils.setParameter(sb, isFirst, "initialReconnectDelay", initialReconnectDelay);
         ConfigurationUtils.setParameter(sb, isFirst, "alphabet", alphabet, null, Alphabet::getValue);
-
 
         boolean isReceiver = this.smppConnectionType.equals(SmppConnectionType.RECEIVER);
         boolean isTransceiver = this.smppConnectionType.equals(SmppConnectionType.TRANSCEIVER);
@@ -131,8 +134,8 @@ public class SmppConfiguration implements Cloneable {
             ConfigurationUtils.setParameter(sb, isFirst, "destAddrNpi", destAddrNpi);
             ConfigurationUtils.setParameter(sb, isFirst, "destAddrTon", destAddrTon);
             ConfigurationUtils.setParameter(sb, isFirst, "singleDeliveryReport", singleDeliveryReport, true);
-            ConfigurationUtils.setParameter(sb, isFirst, "registeredDelivery", deliveryType, RegisteredDelivery.ALWAYS);
-            ConfigurationUtils.setParameter(sb, isFirst, "splittingPolicy", splittingPolicy, SmppSplittingPolicy.REJECT, SmppSplittingPolicy::ordinal);
+            ConfigurationUtils.setParameter(sb, isFirst, "splittingPolicy", splittingPolicy, SmppSplittingPolicy.REJECT);
+            ConfigurationUtils.setParameter(sb, isFirst, "registeredDelivery", deliveryType, RegisteredDelivery.ALWAYS, RegisteredDelivery::getValue);
         }
         if (isTransceiver) {
             ConfigurationUtils.setParameter(sb, isFirst, "messageReceiverRouteId", Optional.of(redirectTo));

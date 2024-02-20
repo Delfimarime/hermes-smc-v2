@@ -403,3 +403,4 @@ build/
 .vscode/
 
 startup.sh
+.dev
