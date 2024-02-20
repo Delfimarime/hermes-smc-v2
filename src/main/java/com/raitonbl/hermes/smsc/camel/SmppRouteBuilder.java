@@ -1,5 +1,7 @@
 package com.raitonbl.hermes.smsc.camel;
 
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConnectionType;
