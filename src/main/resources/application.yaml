@@ -20,6 +20,13 @@ spring:
           queue: unsupported-pdu-queue
         delivery-receipt-channel:
           queue: delivery-receipt-queue
+      services:
+        default:
+          port: 2775
+          hostname: localhost
+          username: transmitter
+          password: admin
+
   cloud:
     discovery:
       enabled: ${HERMES_SERVER_SPRING_CLOUD_DISCOVERY_ENABLED:false}
@@ -27,3 +34,7 @@ eureka:
   client:
     service-url:
       default-Zone: ${HERMES_SERVER_EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
+
+camel:
+  springboot:
+    main-run-controller: true

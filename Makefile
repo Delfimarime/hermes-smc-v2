@@ -8,7 +8,7 @@ AWS_ENDPOINT_URL=http://localhost:4566
 QUEUE_NAMES=send-sms-queue received-sms-queue unsupported-pdu-queue delivery-receipt-queue
 
 # Default target to run all steps
-all: start-localstack setup-queues stop-and-recreate-smppsim run-application
+all: start-localstack setup-queues stop-and-recreate-smppsim publish-message run-application
 
 # Start LocalStack container if not running
 start-localstack:
@@ -48,3 +48,6 @@ run-application:
 	@export AWS_ENDPOINT_URL=$(AWS_ENDPOINT_URL); \
     mvn clean spring-boot:run
 
+publish-message:
+	@export AWS_ENDPOINT_URL=$(AWS_ENDPOINT_URL); \
+	aws --endpoint-url=http://localhost:4566 sqs send-message --queue-url "http://sqs.af-south-1.localhost.localstack.cloud:4566/000000000000/send-sms-queue" --message-body '{"id": "b2097eb3-5067-444d-9859-84e03290c7fd","from":"sqs","content":"Hello world","to":"258841234567"}' \
