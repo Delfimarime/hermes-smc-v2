@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import lombok.Builder;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.aws2.sqs.Sqs2Constants;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.springframework.stereotype.Component;
 
@@ -22,10 +23,10 @@ public class SmppRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() {
-        this.configuration.getServices().forEach((name,config)-> setSmppEndpoint(config,name));
+        this.configuration.getServices().forEach((name, config) -> setSmppEndpoint(config, name));
     }
 
-    private void setSmppEndpoint(SmppConfiguration configuration, String name){
+    private void setSmppEndpoint(SmppConfiguration configuration, String name) {
         if (configuration.getSmppConnectionType() == SmppConnectionType.RECEIVER) {
             setReceiverEndpoint(configuration, name);
         } else {
@@ -49,11 +50,10 @@ public class SmppRouteBuilder extends RouteBuilder {
         String routeId = String.format(TRANSMITTER_ROUTE_ID_FORMAT, name);
         from("direct:" + routeId)
                 .routeId(routeId.toUpperCase())
-                //.setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
-                .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
-                .to(targetConfiguration.toCamelURI())
-                // .removeHeader(SmppConstants.PASSWORD)
                 .routeDescription(String.format("Sends an PDU to %s Short message service center", name))
+                .log(LoggingLevel.INFO, "Sending SendSmsRequest{\"id\":\"${headers."+HermesConstants.SEND_REQUEST_ID+"}\"} through Smpp{\"name\":\""+name+"\"}")
+                .to(targetConfiguration.toCamelURI())
+                .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
     }
 
@@ -63,7 +63,6 @@ public class SmppRouteBuilder extends RouteBuilder {
                 .routeDescription(String.format("Listens to an PDU from %s Short message service center", name))
                 .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
-                .removeHeaders("*", HermesConstants.MESSAGE_RECEIVED_BY)
                 .to(PduListenerRouteBuilder.DIRECT_TO)
                 .end();
     }

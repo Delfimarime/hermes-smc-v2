@@ -29,6 +29,14 @@ spring:
           system-id: transmitter
           smpp-connection-type: TRANSMITTER
           verify-tls: false
+        MTN:
+          port: 2775
+          hostname: localhost
+          username: receiver
+          password: admin
+          system-id: receiver
+          smpp-connection-type: RECEIVER
+          verify-tls: false
 
   cloud:
     discovery:

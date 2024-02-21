@@ -4,6 +4,7 @@ import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PublishConfiguration;
 import com.raitonbl.hermes.smsc.config.messaging.MessagingSystem;
 import lombok.Setter;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,11 +25,12 @@ public class MessagingRouteBuilder extends RouteBuilder {
                 configuration.getPublishTo(), configuration.getPublishTo().getUnsupportedPduChannel());
     }
 
-    private void setRoute(MessagingRouteType type, PublishConfiguration configuration, MessagingSystem ms) {
-        from("direct:" + type.routeId)
-                .routeId(type.routeId)
+    private void setRoute(MessagingRouteType routeType, PublishConfiguration configuration, MessagingSystem ms) {
+        from("direct:" + routeType.routeId)
+                .routeId(routeType.routeId)
                 .routeDescription(String.format("Publishes %s events into %s",
-                        type.eventType, configuration.getType()).toLowerCase())
+                        routeType.eventType, configuration.getType()).toLowerCase())
+                .removeHeaders("*")
                 .to(configuration.toCamelURI(ms))
                 .removeHeaders("*")
                 .end();

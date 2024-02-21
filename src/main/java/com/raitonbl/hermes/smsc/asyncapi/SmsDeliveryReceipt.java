@@ -18,8 +18,8 @@ public class SmsDeliveryReceipt {
     private LocalDateTime receivedAt;
     @JsonProperty("smpp")
     private String smpp;
-    @JsonProperty("source_address")
-    private String sourceAddr;
     @JsonProperty("last_attempt_at")
     private LocalDateTime lastAttemptAt;
+    @JsonProperty("has_been_delivered")
+    private Boolean delivered;
 }
