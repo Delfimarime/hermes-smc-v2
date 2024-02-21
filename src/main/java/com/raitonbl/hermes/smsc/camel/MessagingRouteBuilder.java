@@ -28,9 +28,10 @@ public class MessagingRouteBuilder extends RouteBuilder {
     private void setRoute(MessagingRouteType routeType, PublishConfiguration configuration, MessagingSystem ms) {
         from("direct:" + routeType.routeId)
                 .routeId(routeType.routeId)
-                .routeDescription(String.format("Publishes %s events into %s",
-                        routeType.eventType, configuration.getType()).toLowerCase())
+                .routeDescription(String.format("Publishes %s events into %s", routeType.eventType,
+                        configuration.getType()).toLowerCase())
                 .removeHeaders("*")
+                .log(LoggingLevel.DEBUG,"Submitting "+routeType.eventType+" into Channel{\"type\":\""+configuration.getType()+"\"} ")
                 .to(configuration.toCamelURI(ms))
                 .removeHeaders("*")
                 .end();

@@ -48,6 +48,7 @@ public  class PduListenerRouteBuilder extends RouteBuilder {
         from("direct:" + ROUTE_ID)
                 .routeId(ROUTE_ID)
                 .routeDescription("Listens to smpp.PduEvent and submits it to an queue")
+                .log(LoggingLevel.DEBUG, "smpp.PduEvent received from Smpp{\"name\":\"${headers." + HermesConstants.MESSAGE_RECEIVED_BY + "}\"}")
                 .choice()
                 .when(header(SmppConstants.MESSAGE_TYPE).isEqualTo("DeliverSm"))
                     .log(LoggingLevel.INFO,RECEIVED_SMS_PDU_EVENT)

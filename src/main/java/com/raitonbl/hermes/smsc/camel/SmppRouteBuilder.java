@@ -42,6 +42,7 @@ public class SmppRouteBuilder extends RouteBuilder {
                     .id(redirectTo.toUpperCase())
                     .routeId(redirectTo)
                     .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
+                    .log(LoggingLevel.INFO, "Receiving SendSmsRequest from Smpp{\"name\":\""+name+"\"}")
                     .to(PduListenerRouteBuilder.DIRECT_TO)
                     .end();
             targetConfiguration = configuration.clone();
@@ -51,7 +52,7 @@ public class SmppRouteBuilder extends RouteBuilder {
         from("direct:" + routeId)
                 .routeId(routeId.toUpperCase())
                 .routeDescription(String.format("Sends an PDU to %s Short message service center", name))
-                .log(LoggingLevel.INFO, "Sending SendSmsRequest{\"id\":\"${headers."+HermesConstants.SEND_REQUEST_ID+"}\"} through Smpp{\"name\":\""+name+"\"}")
+                .log(LoggingLevel.DEBUG, "Sending SendSmsRequest{\"id\":\"${headers."+HermesConstants.SEND_REQUEST_ID+"}\"} through Smpp{\"name\":\""+name+"\"}")
                 .to(targetConfiguration.toCamelURI())
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
@@ -63,6 +64,7 @@ public class SmppRouteBuilder extends RouteBuilder {
                 .routeDescription(String.format("Listens to an PDU from %s Short message service center", name))
                 .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
+                .log(LoggingLevel.INFO, "Receiving SendSmsRequest from Smpp{\"name\":\""+name+"\"}")
                 .to(PduListenerRouteBuilder.DIRECT_TO)
                 .end();
     }

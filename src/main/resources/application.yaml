@@ -1,3 +1,4 @@
+
 spring:
   application:
     name: ${HERMES_SERVER_NAME:hermes-smsc-svc}
@@ -49,8 +50,12 @@ eureka:
 camel:
   springboot:
     main-run-controller: true
-
+  debug:
+    logging-level: ${HERMES_SERVER_LOG_LEVEL:INFO}
 management:
   health:
     rabbit:
       enabled: false
+logging:
+  level:
+    root: ${HERMES_SERVER_LOG_LEVEL:INFO}
