@@ -28,7 +28,7 @@ public class SendSmsRequestRouteBuilder extends RouteBuilder {
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE,
                         SmppConnectionDecider.TARGET_HEADER, SmppConstants.DEST_ADDR)
                 .toD("direct:${headers." + SmppConnectionDecider.TARGET_HEADER + "}")
-                .removeHeaders("*")
+                .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
     }
 

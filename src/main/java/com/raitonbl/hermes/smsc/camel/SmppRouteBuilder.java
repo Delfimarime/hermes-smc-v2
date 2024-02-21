@@ -5,6 +5,7 @@ import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConnectionType;
 import jakarta.inject.Inject;
 import lombok.Builder;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.springframework.stereotype.Component;
@@ -49,10 +50,10 @@ public class SmppRouteBuilder extends RouteBuilder {
         from("direct:" + routeId)
                 .routeId(routeId.toUpperCase())
                 //.setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
-                .to(targetConfiguration.toCamelURI())
-                .removeHeader(SmppConstants.PASSWORD)
-                .routeDescription(String.format("Sends an PDU to %s Short message service center", name))
                 .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
+                .to(targetConfiguration.toCamelURI())
+                // .removeHeader(SmppConstants.PASSWORD)
+                .routeDescription(String.format("Sends an PDU to %s Short message service center", name))
                 .end();
     }
 
