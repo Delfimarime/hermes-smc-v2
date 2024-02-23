@@ -18,7 +18,7 @@ public class HermesConfiguration {
     @NotNull
     private PublishConfiguration publishTo;
     @NotNull
-    private Map<String, SmppConfiguration> services;
-    @NotNull
     private SendSmsListenerConfiguration listenTo;
+    @NotNull
+    private Map<String, SmppConfiguration> services;
 }
