@@ -21,4 +21,5 @@ public class HermesConfiguration {
     private SendSmsListenerConfiguration listenTo;
     @NotNull
     private Map<String, SmppConfiguration> services;
+    private RuleConfiguration rulesDatasource;
 }

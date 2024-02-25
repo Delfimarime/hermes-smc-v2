@@ -6,8 +6,6 @@ import jakarta.inject.Inject;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.aws2.sqs.Sqs2Constants;
-import org.apache.camel.component.ehcache.EhcacheConstants;
-import org.apache.camel.component.file.FileConstants;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.stereotype.Component;
@@ -22,6 +20,7 @@ public class SendSmsRequestRouteBuilder extends RouteBuilder {
     @Override
     public void configure() {
         from(configuration.getListenTo().toCamelURI())
+                .routeId("HERMES_SMSC_SEND_MESSAGE_ASYNC")
                 .log(LoggingLevel.DEBUG, "Pulling message from Channel{\"name\":\"SEND_SMS_REQUEST\"}")
                 .unmarshal()
                     .json(JsonLibrary.Jackson, SendSmsRequest.class)

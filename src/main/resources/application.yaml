@@ -1,4 +1,3 @@
-
 spring:
   application:
     name: ${HERMES_SERVER_NAME:hermes-smsc-svc}
@@ -38,23 +37,27 @@ spring:
           system-id: receiver
           smpp-connection-type: RECEIVER
           verify-tls: false
-
+      rules-datasource:
+        type: s3
+        bucket: hermes
+        key: rules.json
   cloud:
     discovery:
       enabled: ${HERMES_SERVER_SPRING_CLOUD_DISCOVERY_ENABLED:false}
+server:
+  port: ${HERMES_SERVER_PORT:8080}
 eureka:
   client:
     service-url:
       default-Zone: ${HERMES_SERVER_EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
-
 camel:
-  springboot:
-    main-run-controller: true
   debug:
     logging-level: ${HERMES_SERVER_LOG_LEVEL:INFO}
 management:
   health:
     rabbit:
+      enabled: false
+    redis:
       enabled: false
 logging:
   level:

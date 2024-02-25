@@ -22,7 +22,7 @@ public class MessagingSystem {
         return camelURIFrom(systemType, target, null);
     }
 
-    public static String camelURIFrom(MessageSystemType systemType, MessagingSystem target, BiConsumer<StringBuilder,AtomicBoolean> afterSet) {
+    public static String camelURIFrom(MessageSystemType systemType, MessagingSystem target, BiConsumer<StringBuilder, AtomicBoolean> afterSet) {
         AtomicBoolean isFirst = new AtomicBoolean(true);
         StringBuilder sb = new StringBuilder();
         switch (systemType) {
@@ -33,9 +33,7 @@ public class MessagingSystem {
                 }
                 sb.append("aws2-sqs://").append(name);
                 ConfigurationUtils.setParameter(sb, isFirst, "useDefaultCredentialsProvider", true);
-                if (target.getRegion() != null) {
-                    ConfigurationUtils.setParameter(sb, isFirst, "region", target.getRegion());
-                }
+                ConfigurationUtils.setParameter(sb, isFirst, "region", target.getRegion());
                 ConfigurationUtils.setParameter(sb, isFirst, "operation", "sendBatchMessage");
                 ConfigurationUtils.setParameter(sb, isFirst, "amazonSQSClient", "#amazonSQSClient");
             }
@@ -47,7 +45,7 @@ public class MessagingSystem {
             default -> throw new IllegalArgumentException(systemType + " isn't supported");
         }
         if (afterSet != null) {
-            afterSet.accept(sb,isFirst);
+            afterSet.accept(sb, isFirst);
         }
         return sb.toString();
     }
