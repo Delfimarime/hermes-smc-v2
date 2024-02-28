@@ -3,11 +3,12 @@ package com.raitonbl.hermes.smsc.config.rule;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Getter
 @Setter
-public class Rule {
-    private String id;
+public class Rule implements Serializable {
     private String name;
-    private String description;
     private RuleSpec spec;
+    private String description;
 }

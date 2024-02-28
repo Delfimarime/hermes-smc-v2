@@ -23,7 +23,7 @@ public class RuleConfiguration implements CamelConfiguration {
     private String region; // S3
     private String filename; // Filesystem
     private DatasourceType type;
-    private Integer timeToLiveInCache;
+    private Long timeToLiveInCache;
 
     @Override
     public String toCamelURI() {
