@@ -66,7 +66,7 @@ public class RuleConfiguration implements CamelConfiguration {
                 ConfigurationUtils.setParameter(sb,isFirst,"command","SET");
                 break;
             case FILESYSTEM:
-                sb.append("file://.?fileName=").append(filename);
+                sb.append("file://.");
                 break;
             case S3:
                 sb.append("aws2-s3://").append(this.bucket);
