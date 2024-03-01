@@ -8,6 +8,6 @@ import java.io.Serializable;
 @Getter
 @Setter
 public class TagsCriteria  implements Serializable {
-    private String anyOf;
-    private String allOf;
+    private String[] anyOf;
+    private String[] allOf;
 }
