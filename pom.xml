@@ -134,6 +134,16 @@
             <artifactId>camel-json-validator</artifactId>
             <version>${camel.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-dataformat</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-snakeyaml</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
         <!-- Apache Camel -->
         <dependency>
             <groupId>org.ehcache</groupId>
