@@ -41,6 +41,7 @@ spring:
         type: s3
         bucket: hermes
         key: rules.json
+        expose-api: true
   cloud:
     discovery:
       enabled: ${HERMES_SERVER_SPRING_CLOUD_DISCOVERY_ENABLED:false}

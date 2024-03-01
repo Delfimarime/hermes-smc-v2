@@ -1,11 +1,12 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.raitonbl.hermes.smsc.camel.RuleOpts;
+import com.raitonbl.hermes.smsc.common.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.RuleConfiguration;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
-import com.raitonbl.hermes.smsc.model.Problem;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -18,8 +19,6 @@ import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.camel.component.redis.RedisConstants;
 import org.apache.camel.model.ProcessorDefinition;
-import org.apache.camel.model.dataformat.JsonLibrary;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
@@ -33,25 +32,23 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Component
-public class RuleApiRouteBuilder extends RouteBuilder {
+public class RuleRouteBuilder extends RouteBuilder {
     private static final String CACHE_NAME = "kv_rule";
     private static final String RULE_CACHE_KEY = "default";
-    public static final String READ_RULES_ROUTE_ID = "HERMES_SMSC_SYSTEM_READ_RULES";
+    public static final String READ_RULES_ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "_READ_RULES";
     public static final String DIRECT_TO_READ_RULES_ROUTE_ID = "direct:" + READ_RULES_ROUTE_ID;
-    public static final String GET_RULES_ENDPOINT_ROUTE_ID = "HERMES_SMSC_API_GET_RULES";
-    public static final String PUT_RULES_ENDPOINT_ROUTE_ID = "HERMES_SMSC_API_PUT_RULES";
-
+    public static final String UPDATE_RULES_ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "_PUT_RULES";
+    public static final String DIRECT_TO_UPDATE_RULES_ROUTE_ID = "direct:" + UPDATE_RULES_ROUTE_ID;
     private ObjectMapper objectMapper;
-
-    private HermesConfiguration configuration;
+    private RuleConfiguration configuration;
 
     @Override
     public void configure() {
-        if (configuration.getRulesDatasource() == null) {
+        if (configuration == null) {
             return;
         }
-        JCachePolicy jcachePolicy = new JCachePolicy();
-        Long durationInCache =configuration.getRulesDatasource().getTimeToLiveInCache();
+        JCachePolicy jCachePolicy = new JCachePolicy();
+        Long durationInCache = configuration.getTimeToLiveInCache();
         if (durationInCache != null) {
             MutableConfiguration<String, Object> configuration = new MutableConfiguration<>();
             configuration.setTypes(String.class, Object.class);
@@ -60,57 +57,28 @@ public class RuleApiRouteBuilder extends RouteBuilder {
                             .factoryOf(new Duration(TimeUnit.SECONDS, durationInCache)));
             CacheManager cacheManager = Caching.getCachingProvider().getCacheManager();
             Cache<String, Object> cache = cacheManager.createCache(CACHE_NAME, configuration);
-            jcachePolicy.setCache(cache);
+            jCachePolicy.setCache(cache);
         }
-        RuleOpts opts = from(configuration.getRulesDatasource());
-        setDoGetRules(opts, jcachePolicy);
-        exposeGetRulesApiEndpoint();
-        exposePutRulesApiEndpoint(opts, jcachePolicy);
+        RuleOpts ruleOpts = from(configuration);
+        this.setReadRoute(ruleOpts, jCachePolicy);
+        if (Boolean.TRUE.equals(configuration.getExposeApi())) {
+            this.setUpdateRoute(ruleOpts, jCachePolicy);
+        }
     }
 
-    private void exposePutRulesApiEndpoint(RuleOpts opts, JCachePolicy jCachePolicy) {
-        from("rest:PUT:/rules?consumes=" + MediaType.APPLICATION_JSON_VALUE + "&produces=" + MediaType.APPLICATION_JSON_VALUE)
-                .routeId(PUT_RULES_ENDPOINT_ROUTE_ID)
+    private void setUpdateRoute(RuleOpts opts, JCachePolicy jCachePolicy) {
+        from(DIRECT_TO_UPDATE_RULES_ROUTE_ID)
+                .routeId(DIRECT_TO_UPDATE_RULES_ROUTE_ID)
                 .setHeader(JCacheConstants.KEY, simple(RULE_CACHE_KEY))
                 .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
                 .policy(jCachePolicy)
-                .doTry()
-                    .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
-                    .process(this.addHeader(opts.getWriteHeaders()))
-                    .to(configuration.getRulesDatasource().toPersistCamelURI())
-                    .removeHeaders("*")
-                    .setBody(simple(null))
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(204))
-                    .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_JSON_VALUE))
-                .doCatch(Exception.class)
-                    .log("Exception caught ${exception.stacktrace}")
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))
-                    .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(constant(Problem.get()))
-                .doFinally()
-                    .marshal().json(JsonLibrary.Jackson)
+                .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
+                .process(this.addHeader(opts.getWriteHeaders()))
+                .to(configuration.toPersistCamelURI())
                 .end();
     }
 
-    private void exposeGetRulesApiEndpoint() {
-        from("rest:GET:/rules?consumes=" + MediaType.APPLICATION_JSON_VALUE + "&produces=" + MediaType.APPLICATION_JSON_VALUE)
-                .routeId(GET_RULES_ENDPOINT_ROUTE_ID)
-                .doTry()
-                    .to(DIRECT_TO_READ_RULES_ROUTE_ID)
-                    .removeHeaders("*")
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(200))
-                    .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_JSON_VALUE))
-                .doCatch(Exception.class)
-                    .log("Exception caught ${exception.stacktrace}")
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))
-                    .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(constant(Problem.get()))
-                .doFinally()
-                    .marshal().json(JsonLibrary.Jackson)
-                .end();
-    }
-
-    private void setDoGetRules(RuleOpts opts, JCachePolicy jCachePolicy) {
+    private void setReadRoute(RuleOpts opts, JCachePolicy jCachePolicy) {
         ProcessorDefinition<?> definition = from(DIRECT_TO_READ_RULES_ROUTE_ID)
                 .routeId(READ_RULES_ROUTE_ID)
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
@@ -119,23 +87,25 @@ public class RuleApiRouteBuilder extends RouteBuilder {
                 .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
                 .choice()
                 .when(body().isNotNull())
-                .log(LoggingLevel.DEBUG, "Retrieving rules from jcache[key=${headers." +
-                        JCacheConstants.KEY + "}]")
+                    .log(LoggingLevel.DEBUG, "Retrieving rules from jcache[key=${headers." +
+                            JCacheConstants.KEY + "}]")
                 .otherwise()
-                .log(LoggingLevel.DEBUG, "Reading rules from datasource[type=" +
-                        this.configuration.getRulesDatasource().getType() + "]")
-                .process(this.addHeader(opts.getReadHeaders()));
+                    .log(LoggingLevel.DEBUG, "Reading rules from datasource[type=" +
+                            this.configuration.getType() + "]")
+                    .process(this.addHeader(opts.getReadHeaders()));
 
         if (opts.getCatchableReadException() != null) {
-            definition = definition.doTry()
-                    .to(this.configuration.getRulesDatasource().toCamelURI())
+            definition = definition
+                    .doTry()
+                        .to(this.configuration.toCamelURI())
                     .doCatch(NoSuchKeyException.class)
-                    .log(opts.getOnCatchReadExceptionLog())
+                        .log(opts.getOnCatchReadExceptionLog())
                     .end();
         } else {
-            definition = definition.to(this.configuration.getRulesDatasource().toCamelURI()).end();
+            definition = definition
+                    .to(this.configuration.toCamelURI())
+                    .end();
         }
-
         definition.process(this.removeHeader(opts.getReadHeaders()))
                 .process(this::unmarshall)
                 .setHeader(JCacheConstants.ACTION, simple("PUT"))
@@ -146,11 +116,11 @@ public class RuleApiRouteBuilder extends RouteBuilder {
     }
 
     private Processor addHeader(Map<String, ValueBuilder> h) {
-        return (exchange -> h.forEach((k, v)->exchange.getIn().setHeader(k,v)));
+        return (exchange -> h.forEach((k, v) -> exchange.getIn().setHeader(k, v)));
     }
 
     private Processor removeHeader(Map<String, ValueBuilder> h) {
-        return (exchange -> h.forEach((k, v)->exchange.getIn().removeHeader(k)));
+        return (exchange -> h.forEach((k, v) -> exchange.getIn().removeHeader(k)));
     }
 
     private void unmarshall(Exchange exchange) throws Exception {
@@ -175,13 +145,13 @@ public class RuleApiRouteBuilder extends RouteBuilder {
                 Map<String, ValueBuilder> opts = new HashMap<>();
                 opts.put(AWS2S3Constants.KEY, simple(cfg.getKey()));
                 Optional.ofNullable(cfg.getPrefix())
-                        .ifPresent((value)-> opts.put(AWS2S3Constants.PREFIX,simple(value)));
-               return RuleOpts.builder().readURI(cfg.toCamelURI()).writeURI(cfg.toPersistCamelURI())
+                        .ifPresent((value) -> opts.put(AWS2S3Constants.PREFIX, simple(value)));
+                return RuleOpts.builder().readURI(cfg.toCamelURI()).writeURI(cfg.toPersistCamelURI())
                         .readHeaders(opts).writeHeaders(opts)
-                       .catchableReadException(NoSuchKeyException.class)
-                       .onCatchReadExceptionLog("No such key `${headers." + AWS2S3Constants.KEY + "}` " +
-                               "on bucket[name=`${headers." + AWS2S3Constants.BUCKET_NAME + "}`]")
-                       .build();
+                        .catchableReadException(NoSuchKeyException.class)
+                        .onCatchReadExceptionLog("No such key `${headers." + AWS2S3Constants.KEY + "}` " +
+                                "on bucket[name=`${headers." + AWS2S3Constants.BUCKET_NAME + "}`]")
+                        .build();
             }
             case FILESYSTEM -> {
                 return RuleOpts.builder().readURI(cfg.toCamelURI()).writeURI(cfg.toPersistCamelURI())
@@ -195,7 +165,7 @@ public class RuleApiRouteBuilder extends RouteBuilder {
 
     @Inject
     public void setConfiguration(HermesConfiguration configuration) {
-        this.configuration = configuration;
+        this.configuration = configuration.getRulesDatasource();
     }
 
     @Inject

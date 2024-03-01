@@ -24,6 +24,7 @@ public class RuleConfiguration implements CamelConfiguration {
     private String filename; // Filesystem
     private DatasourceType type;
     private Long timeToLiveInCache;
+    private Boolean exposeApi;
 
     @Override
     public String toCamelURI() {
