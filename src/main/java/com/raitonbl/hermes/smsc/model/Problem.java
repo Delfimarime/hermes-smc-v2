@@ -3,11 +3,8 @@ package com.raitonbl.hermes.smsc.model;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.ValueBuilder;
 import org.springframework.http.HttpStatus;
-
-import java.util.function.Function;
 
 @Getter
 @Setter
