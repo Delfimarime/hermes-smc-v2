@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class TagsCriteria  implements Serializable {
+public class TagCriteria implements Serializable {
     private String[] anyOf;
     private String[] allOf;
 }

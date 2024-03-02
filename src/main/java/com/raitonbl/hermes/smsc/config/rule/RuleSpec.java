@@ -10,7 +10,8 @@ import java.io.Serializable;
 @Setter
 public class RuleSpec  implements Serializable {
     private String from;
-    private TagsCriteria[] tags;
+    private TagCriteria[] tags;
     @JsonProperty("destination")
     private String destinationAddr;
+    private String smpp;
 }

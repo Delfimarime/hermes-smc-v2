@@ -1,6 +1,7 @@
 package com.raitonbl.hermes.smsc.camel;
 
 import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.common.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import jakarta.inject.Inject;
 import org.apache.camel.LoggingLevel;
@@ -12,33 +13,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SendSmsRequestRouteBuilder extends RouteBuilder {
-    private static final String TARGET_SMPP_FORMAT = String.format(SmppRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT,
-            "${headers." + SmppConnectionDecider.TARGET_HEADER + ".toUpperCase()}");
-    private HermesConfiguration configuration;
-    private SmppConnectionDecider decideSmppConnection;
+     private HermesConfiguration configuration;
 
     @Override
     public void configure() {
         from(configuration.getListenTo().toCamelURI())
-                .routeId("HERMES_SMSC_SEND_MESSAGE_ASYNC")
+                .routeId(CamelConstants.ROUTE_PREFIX +"_SEND_MESSAGE")
                 .log(LoggingLevel.DEBUG, "Pulling message from Channel{\"name\":\"SEND_SMS_REQUEST\"}")
                 .unmarshal()
                     .json(JsonLibrary.Jackson, SendSmsRequest.class)
                 .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
                 .setHeader(HermesConstants.SEND_REQUEST_ID,simple("${body.id}"))
-                .process(decideSmppConnection)
-                .log(LoggingLevel.INFO, "SendSmsRequest{\"id\":\"${body.id}\"} destination is Smpp{\"name\":\"${headers."+SmppConnectionDecider.TARGET_HEADER+"}\"}")
-                .setHeader(SmppConnectionDecider.TARGET_HEADER, simple(TARGET_SMPP_FORMAT))
                 .setBody(simple("${body.content}"))
-                .log(LoggingLevel.DEBUG, "Redirect SendSmsRequest{\"id\":\"${headers."+HermesConstants.SEND_REQUEST_ID+"}\"} to Endpoint{\"name\":\"direct:${headers."+ SmppConnectionDecider.TARGET_HEADER +"}\"}")
-                .toD("direct:${headers." + SmppConnectionDecider.TARGET_HEADER + "}")
+                .to(SmppDeciderRouteBuilder.DIRECT_TO_ROUTE_ID)
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
-    }
-
-    @Inject
-    public void setDecideSmppConnection(SmppConnectionDecider decideSmppConnection) {
-        this.decideSmppConnection = decideSmppConnection;
     }
 
     @Inject
