@@ -2,6 +2,8 @@ package com.raitonbl.hermes.smsc.config.common;
 
 import com.ctc.wstx.shaded.msv_core.util.Uri;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
+import org.apache.camel.spring.boot.util.ConditionalOnHierarchicalProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +28,8 @@ public class BeanFactory {
     public static final String RULES_REDIS_CONNECTION_FACTORY ="rulesRedisConnectionFactory";
 
     @Bean(AWS_SQS_CLIENT)
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "spring.boot.hermes",name = {"listen-to.type","publish-to.type"}, havingValue = "AWS_SQS")
     public SqsClient getSqsClient() {
         Region region = Optional.ofNullable(System.getenv("DEFAULT_AWS_REGION"))
                 .map(Region::of).orElse(Region.AF_SOUTH_1);
@@ -37,6 +41,7 @@ public class BeanFactory {
     }
 
     @Bean(AWS_S3_CLIENT)
+    @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "spring.boot.hermes.rules-datasource.type", havingValue = "s3")
     public S3Client getS3Client() {
         Region region = Optional.ofNullable(System.getenv("DEFAULT_AWS_REGION"))
@@ -48,6 +53,7 @@ public class BeanFactory {
         return builder.build();
     }
 
+    @ConditionalOnMissingBean
     @Bean(RULES_REDIS_CONNECTION_FACTORY)
     @ConditionalOnProperty(name = "spring.boot.hermes.rules-datasource.type", havingValue = "redis")
     public RedisConnectionFactory redisConnectionFactory(HermesConfiguration configuration) {

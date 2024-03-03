@@ -3,12 +3,13 @@ package com.raitonbl.hermes.smsc.camel;
 import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.camel.common.RuleRouteBuilder;
 import com.raitonbl.hermes.smsc.common.CamelConstants;
-import com.raitonbl.hermes.smsc.config.rule.CannotDetermineSmppTarget;
+import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
 import com.raitonbl.hermes.smsc.config.rule.TagCriteria;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.commons.validator.routines.RegexValidator;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,7 @@ public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
     public static final String DIRECT_TO_ROUTE_ID = "direct:" + ROUTE_ID;
     private static final String RULES_QUEUE_HEADER = CamelConstants.HEADER_PREFIX + "Rules";
     private static final String TARGET_RULE_HEADER = CamelConstants.HEADER_PREFIX + "TargetRule";
-    private static final String TARGET_SMPP_HEADER = CamelConstants.HEADER_PREFIX + "TargetSmpp";
+    public static final String TARGET_SMPP_HEADER = CamelConstants.HEADER_PREFIX + "TargetSmpp";
     private static final String NEXT_RULE_ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "DETERMINE_RULE";
     private static final String DIRECT_TO_NEXT_RULE_ROUTE_ID = "direct:" + NEXT_RULE_ROUTE_ID;
 
@@ -33,6 +34,9 @@ public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
                 .process(this::setSmppHeader)
                 .choice()
                     .when(header(TARGET_SMPP_HEADER).isNotNull())
+                        .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
+                        .setHeader(HermesConstants.SEND_REQUEST_ID, simple("${body.id}"))
+                        .setBody(simple("${body.content}"))
                         .toD("direct:{$headers."+TARGET_SMPP_HEADER+"}")
                     .otherwise()
                         .process(this::setTargetRule)
@@ -40,8 +44,8 @@ public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
                             .when(header(TARGET_RULE_HEADER).isNotNull())
                                 .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                             .otherwise()
-                                .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\": \"*\"]")
-                                .throwException(CannotDetermineSmppTarget.class,"${body.id}")
+                                .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
+                                .throwException(CannotDetermineTargetSmppConnectionException.class,"SendSmsRequest[\"id\":\"${body.id}\"]")
                         .endChoice()
                     .endChoice()
                 .end();
@@ -57,6 +61,9 @@ public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
     private void setSmppHeader(Exchange exchange) {
         Rule rule = exchange.getIn().getHeader(TARGET_RULE_HEADER, Rule.class);
         SendSmsRequest request = exchange.getIn().getBody(SendSmsRequest.class);
+        if (rule == null || request == null) {
+            return;
+        }
         if (isCompatible(rule, request)) {
             exchange.getIn().setHeader(TARGET_SMPP_HEADER, String
                     .format(SmppRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())

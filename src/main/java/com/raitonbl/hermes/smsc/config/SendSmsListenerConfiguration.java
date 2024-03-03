@@ -25,7 +25,6 @@ public class SendSmsListenerConfiguration extends MessagingSystem {
             ConfigurationUtils.setParameter(sb, isFirst, "maxMessagesPerPoll", this.maxMessagesPerPoll);
             ConfigurationUtils.setParameter(sb, isFirst, "concurrentConsumers", this.concurrentConsumers);
             ConfigurationUtils.setParameter(sb, isFirst, "receiveMessageWaitTimeSeconds", this.receiveMessageWaitTimeSeconds);
-
         });
     }
 }

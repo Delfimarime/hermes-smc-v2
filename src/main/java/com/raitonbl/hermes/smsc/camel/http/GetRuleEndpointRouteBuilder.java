@@ -31,8 +31,8 @@ public class GetRuleEndpointRouteBuilder extends RouteBuilder {
         from("rest:GET:/rules")
                 .routeId(GET_RULES_ENDPOINT_ROUTE_ID)
                 .doTry()
+                    .log(LoggingLevel.DEBUG, "GET /rules has Content-Type=${headers."+Exchange.CONTENT_TYPE+"}")
                     .choice()
-                        .log(LoggingLevel.DEBUG, "GET /rules has Content-Type=${headers."+Exchange.CONTENT_TYPE+"}")
                         .when(PredicateBuilder.not( header(Exchange.CONTENT_TYPE).in(MediaType.APPLICATION_JSON_VALUE,MediaType.TEXT_PLAIN_VALUE) ))
                             .throwException(new HttpMediaTypeNotSupportedException("MediaType doesn't match"+MediaType.TEXT_PLAIN_VALUE+" nor "+MediaType.APPLICATION_JSON_VALUE))
                     .end()
@@ -63,7 +63,7 @@ public class GetRuleEndpointRouteBuilder extends RouteBuilder {
                             .setBody(Problem.unsupportedMediaType(ENDPOINT_OPERATION_ID))
                             .marshal().json(JsonLibrary.Jackson)
                             .setHeader(Exchange.CONTENT_TYPE,constant(MediaType.APPLICATION_JSON_VALUE))
-                        .endChoice()
+                    .end()
                 .end();
     }
 

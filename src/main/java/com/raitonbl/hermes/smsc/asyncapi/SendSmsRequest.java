@@ -1,11 +1,13 @@
 package com.raitonbl.hermes.smsc.asyncapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 public class SendSmsRequest {
     @JsonProperty("id")
     private String id;

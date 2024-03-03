@@ -80,6 +80,7 @@ public class RuleRouteBuilder extends RouteBuilder {
     private void setReadRoute(RuleOpts opts, JCachePolicy jCachePolicy) {
         ProcessorDefinition<?> definition = from(DIRECT_TO_READ_RULES_ROUTE_ID)
                 .routeId(READ_RULES_ROUTE_ID)
+                .setBody(simple(null))
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
                 .setHeader(JCacheConstants.KEY, simple(RULE_CACHE_KEY))
                 .policy(jCachePolicy)
@@ -105,6 +106,7 @@ public class RuleRouteBuilder extends RouteBuilder {
                     .to(this.configuration.toCamelURI())
                     .end();
         }
+        
         definition.process(this.removeHeader(opts.getReadHeaders()))
                 .process(this::unmarshall)
                 .setHeader(JCacheConstants.ACTION, simple("PUT"))
