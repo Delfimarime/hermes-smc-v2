@@ -18,7 +18,6 @@ import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,14 +40,12 @@ class SendSmsRequestRouteTests {
     ProducerTemplate template;
     @Autowired
     CamelContext context;
-
     @BeforeEach
     void init() {
         TestBeanFactory.setRules(null);
     }
 
     @Test
-    @Order(1)
     void sendSmsRequest_when_no_rules_and_throw_exception() {
         var sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
                 .from("+25884XXX0000").content("Hi").tags(null).build();
@@ -66,9 +63,8 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
-    @Order(2)
-    void sendSmsRequest_when_single_rule_match_is_first() throws Exception {
-        sendSmsRequest_when_match_any((from, smpp) -> List.of(
+    void sendSmsRoute_then_assert_exchange_for_single_rule() throws Exception {
+        SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
                         .spec(RuleSpec.builder().from(from).smpp(smpp).build())
                         .build()
@@ -76,9 +72,8 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
-    @Order(3)
-    void sendSmsRequest_when_single_rule_match_is_second() throws Exception {
-        sendSmsRequest_when_match_any((from, smpp) -> List.of(
+    void sendSmsRoute_then_assert_exchange_for_second_rule() throws Exception {
+        SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 Rule.builder().name("v4").description("v4")
                         .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v4").build())
                         .build(),
@@ -89,9 +84,8 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
-    @Order(4)
-    void sendSmsRequest_when_single_rule_match_is_third() throws Exception {
-        sendSmsRequest_when_match_any((from, smpp) -> List.of(
+    void sendSmsRoute_then_assert_exchange_for_third_rule() throws Exception {
+        SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 Rule.builder().name("v1").description("v1")
                         .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v1").build())
                         .build(),
@@ -104,7 +98,7 @@ class SendSmsRequestRouteTests {
         ));
     }
 
-    void sendSmsRequest_when_match_any(BiFunction<String, String, List<Rule>> p) throws Exception {
+    void SendSmsRoute_then_assert_exchange(BiFunction<String, String, List<Rule>> p) throws Exception {
         String from = UUID.randomUUID().toString();
         SendSmsRequest sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
                 .from(from).content("Hi").tags(null).build();
