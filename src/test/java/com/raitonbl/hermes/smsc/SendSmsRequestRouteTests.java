@@ -44,7 +44,6 @@ class SendSmsRequestRouteTests {
     void init() {
         TestBeanFactory.setRules(null);
     }
-
     @Test
     void sendSmsRequest_when_no_rules_and_throw_exception() {
         var sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
@@ -61,7 +60,6 @@ class SendSmsRequestRouteTests {
                     }
                 });
     }
-
     @Test
     void sendSmsRoute_then_assert_exchange_for_single_rule() throws Exception {
         SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
@@ -70,7 +68,6 @@ class SendSmsRequestRouteTests {
                         .build()
         ));
     }
-
     @Test
     void sendSmsRoute_then_assert_exchange_for_second_rule() throws Exception {
         SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
@@ -82,7 +79,6 @@ class SendSmsRequestRouteTests {
                         .build()
         ));
     }
-
     @Test
     void sendSmsRoute_then_assert_exchange_for_third_rule() throws Exception {
         SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
@@ -97,7 +93,6 @@ class SendSmsRequestRouteTests {
                         .build()
         ));
     }
-
     void SendSmsRoute_then_assert_exchange(BiFunction<String, String, List<Rule>> p) throws Exception {
         String from = UUID.randomUUID().toString();
         SendSmsRequest sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
