@@ -37,7 +37,7 @@ public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
                         .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
                         .setHeader(HermesConstants.SEND_REQUEST_ID, simple("${body.id}"))
                         .setBody(simple("${body.content}"))
-                        .toD("direct:{$headers."+TARGET_SMPP_HEADER+"}")
+                        .toD("direct:${headers."+TARGET_SMPP_HEADER+"}")
                     .otherwise()
                         .process(this::setTargetRule)
                         .choice()

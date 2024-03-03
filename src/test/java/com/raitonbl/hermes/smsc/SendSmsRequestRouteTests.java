@@ -2,14 +2,19 @@ package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.camel.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.SendSmsThroughSmppRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.SmppRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
 import com.raitonbl.hermes.smsc.config.rule.RuleSpec;
-import org.apache.camel.*;
-import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
+import org.apache.camel.CamelContext;
+import org.apache.camel.CamelExecutionException;
+import org.apache.camel.Exchange;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +28,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 @SpringBootTest
 @CamelSpringBootTest
@@ -35,9 +39,11 @@ class SendSmsRequestRouteTests {
     HermesConfiguration configuration;
     @Autowired
     ProducerTemplate template;
+    @Autowired
+    CamelContext context;
 
     @BeforeEach
-    void init(){
+    void init() {
         TestBeanFactory.setRules(null);
     }
 
@@ -61,8 +67,8 @@ class SendSmsRequestRouteTests {
 
     @Test
     @Order(2)
-    void sendSmsRequest_when_single_rule_match_is_first() {
-        sendSmsRequest_when_match_any((smpp, from) -> List.of(
+    void sendSmsRequest_when_single_rule_match_is_first() throws Exception {
+        sendSmsRequest_when_match_any((from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
                         .spec(RuleSpec.builder().from(from).smpp(smpp).build())
                         .build()
@@ -71,8 +77,8 @@ class SendSmsRequestRouteTests {
 
     @Test
     @Order(3)
-    void sendSmsRequest_when_single_rule_match_is_second() {
-        sendSmsRequest_when_match_any((smpp, from) -> List.of(
+    void sendSmsRequest_when_single_rule_match_is_second() throws Exception {
+        sendSmsRequest_when_match_any((from, smpp) -> List.of(
                 Rule.builder().name("v4").description("v4")
                         .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v4").build())
                         .build(),
@@ -84,8 +90,8 @@ class SendSmsRequestRouteTests {
 
     @Test
     @Order(4)
-    void sendSmsRequest_when_single_rule_match_is_third() {
-        sendSmsRequest_when_match_any((smpp, from) -> List.of(
+    void sendSmsRequest_when_single_rule_match_is_third() throws Exception {
+        sendSmsRequest_when_match_any((from, smpp) -> List.of(
                 Rule.builder().name("v1").description("v1")
                         .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v1").build())
                         .build(),
@@ -98,26 +104,33 @@ class SendSmsRequestRouteTests {
         ));
     }
 
-    void sendSmsRequest_when_match_any(BiFunction<String, String, List<Rule>> p) {
+    void sendSmsRequest_when_match_any(BiFunction<String, String, List<Rule>> p) throws Exception {
         String from = UUID.randomUUID().toString();
-        String targetSmpp = UUID.randomUUID().toString();
-        var sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
+        SendSmsRequest sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
                 .from(from).content("Hi").tags(null).build();
-        AtomicReference<String> routeId = new AtomicReference<>();
-        Assertions.assertThrows(DirectConsumerNotAvailableException.class,
-                () -> {
-                    try {
-                        TestBeanFactory.setRules(p.apply(targetSmpp, from));
-                        template.sendBody(SendSmsThroughSmppRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
-                    } catch (CamelExecutionException ex) {
-                        if (ex.getCause() instanceof DirectConsumerNotAvailableException) {
-                            routeId.set((String) ex.getExchange().getIn().getHeader(SendSmsThroughSmppRouteBuilder.TARGET_SMPP_HEADER));
-                            throw ex.getCause();
-                        }
-                        throw ex;
-                    }
-                });
-        Assertions.assertEquals(String.format(SmppRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, targetSmpp).toUpperCase(), routeId.get());
+
+        String smppId = UUID.randomUUID().toString();
+        String routeId = SmppRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(smppId);
+
+        AtomicReference<Exchange> reference = new AtomicReference<>(null);
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() {
+                from("direct:" + routeId.toUpperCase())
+                        .routeId(routeId)
+                        .process(reference::set)
+                        .end();
+            }
+        });
+
+        Assertions.assertDoesNotThrow(() -> {
+            TestBeanFactory.setRules(p.apply(from, smppId));
+            template.sendBody(SendSmsThroughSmppRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
+        });
+
+        Assertions.assertEquals(sendSmsRequest.getContent(),reference.get().getIn().getBody());
+        Assertions.assertEquals(sendSmsRequest.getId(),reference.get().getIn().getHeader(HermesConstants.SEND_REQUEST_ID));
+        Assertions.assertEquals(sendSmsRequest.getDestination(),reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
     }
 
 }

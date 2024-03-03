@@ -5,6 +5,7 @@ import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.camel.common.RuleRouteBuilder;
 import com.raitonbl.hermes.smsc.config.common.BeanFactory;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
+import org.apache.camel.Exchange;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,6 +40,7 @@ public class TestBeanFactory {
     public static List<String> queueNames = List.of("send-sms-queue", "received-sms-queue", "unsupported-pdu-queue", "delivery-receipt-queue");
     public static List<SendSmsRequest> requestQueue = new ArrayList<>();
     public static List<Rule> ruleDefinition = null;
+
 
     public static void setRules(List<Rule> definition) {
         Optional.ofNullable(Caching.getCachingProvider().getCacheManager().getCache(RuleRouteBuilder.CACHE_NAME))

@@ -51,7 +51,7 @@ public class SmppRouteBuilder extends RouteBuilder {
             targetConfiguration = configuration.clone();
             targetConfiguration.setRedirectTo(redirectTo);
         }
-        String routeId = String.format(TRANSMITTER_ROUTE_ID_FORMAT, name);
+        String routeId = String.format(TRANSMITTER_ROUTE_ID_FORMAT, name).toUpperCase();
         from("direct:" + routeId)
                 .routeId(routeId.toUpperCase())
                 .routeDescription(String.format("Sends an PDU to %s Short message service center", name))
