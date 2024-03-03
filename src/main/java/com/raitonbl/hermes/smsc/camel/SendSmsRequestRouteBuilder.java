@@ -25,7 +25,7 @@ public class SendSmsRequestRouteBuilder extends RouteBuilder {
                 .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
                 .setHeader(HermesConstants.SEND_REQUEST_ID,simple("${body.id}"))
                 .setBody(simple("${body.content}"))
-                .to(SmppDeciderRouteBuilder.DIRECT_TO_ROUTE_ID)
+                .to(SendSmsThroughSmppRouteBuilder.DIRECT_TO_ROUTE_ID)
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
     }

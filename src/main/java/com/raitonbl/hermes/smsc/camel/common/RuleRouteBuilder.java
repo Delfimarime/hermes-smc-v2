@@ -2,7 +2,6 @@ package com.raitonbl.hermes.smsc.camel.common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.raitonbl.hermes.smsc.camel.RuleOpts;
 import com.raitonbl.hermes.smsc.common.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.RuleConfiguration;

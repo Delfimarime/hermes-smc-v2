@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 @Component
-public class SmppDeciderRouteBuilder extends RouteBuilder {
+public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
     private static final String ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "SEND_MESSAGE";
     public static final String DIRECT_TO_ROUTE_ID = "direct:" + ROUTE_ID;
     private static final String RULES_QUEUE_HEADER = CamelConstants.HEADER_PREFIX + "Rules";

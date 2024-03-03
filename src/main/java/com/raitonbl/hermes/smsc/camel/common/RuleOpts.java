@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.common;
 
 import lombok.Builder;
 import lombok.Getter;
