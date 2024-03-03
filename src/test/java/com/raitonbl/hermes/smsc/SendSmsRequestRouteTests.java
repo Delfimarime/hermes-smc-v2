@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 @SpringBootTest
 @CamelSpringBootTest
@@ -40,10 +41,12 @@ class SendSmsRequestRouteTests {
     ProducerTemplate template;
     @Autowired
     CamelContext context;
+
     @BeforeEach
     void init() {
         TestBeanFactory.setRules(null);
     }
+
     @Test
     void sendSmsRequest_when_no_rules_and_throw_exception() {
         var sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
@@ -60,17 +63,19 @@ class SendSmsRequestRouteTests {
                     }
                 });
     }
+
     @Test
     void sendSmsRoute_then_assert_exchange_for_single_rule() throws Exception {
-        SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
+        sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
                         .spec(RuleSpec.builder().from(from).smpp(smpp).build())
                         .build()
         ));
     }
+
     @Test
     void sendSmsRoute_then_assert_exchange_for_second_rule() throws Exception {
-        SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
+        sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 Rule.builder().name("v4").description("v4")
                         .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v4").build())
                         .build(),
@@ -79,9 +84,10 @@ class SendSmsRequestRouteTests {
                         .build()
         ));
     }
+
     @Test
     void sendSmsRoute_then_assert_exchange_for_third_rule() throws Exception {
-        SendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
+        sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 Rule.builder().name("v1").description("v1")
                         .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v1").build())
                         .build(),
@@ -93,11 +99,32 @@ class SendSmsRequestRouteTests {
                         .build()
         ));
     }
-    void SendSmsRoute_then_assert_exchange(BiFunction<String, String, List<Rule>> p) throws Exception {
-        String from = UUID.randomUUID().toString();
-        SendSmsRequest sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
-                .from(from).content("Hi").tags(null).build();
 
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_destination_pattern() throws Exception {
+        String destination = "25884XXX0001";
+        sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(RuleSpec.builder().destinationAddr("^25884X").smpp(smpp).build())
+                        .build()
+        ),  b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null));
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_destination_equal_to() throws Exception {
+        String destination = "25884XXX0001";
+        sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(RuleSpec.builder().destinationAddr(destination).smpp(smpp).build())
+                        .build()
+        ),  b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null));
+    }
+
+    void sendSmsRoute_then_assert_exchange(BiFunction<String, String, List<Rule>> getRuleList) throws Exception {
+        sendSmsRoute_then_assert_exchange(getRuleList, b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString()).content("Hi").tags(null));
+    }
+
+    void sendSmsRoute_then_assert_exchange(BiFunction<String, String, List<Rule>> getRuleList, Consumer<SendSmsRequest.SendSmsRequestBuilder> c) throws Exception {
         String smppId = UUID.randomUUID().toString();
         String routeId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(smppId);
 
@@ -112,14 +139,18 @@ class SendSmsRequestRouteTests {
             }
         });
 
+        SendSmsRequest.SendSmsRequestBuilder builder = SendSmsRequest.builder();
+        c.accept(builder);
+        SendSmsRequest sendSmsRequest = builder.build();
+
         Assertions.assertDoesNotThrow(() -> {
-            TestBeanFactory.setRules(p.apply(from, smppId));
+            TestBeanFactory.setRules(getRuleList.apply(sendSmsRequest.getFrom(), smppId));
             template.sendBody(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
         });
 
-        Assertions.assertEquals(sendSmsRequest.getContent(),reference.get().getIn().getBody());
-        Assertions.assertEquals(sendSmsRequest.getId(),reference.get().getIn().getHeader(CamelConstants.SEND_REQUEST_ID));
-        Assertions.assertEquals(sendSmsRequest.getDestination(),reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
+        Assertions.assertEquals(sendSmsRequest.getContent(), reference.get().getIn().getBody());
+        Assertions.assertEquals(sendSmsRequest.getId(), reference.get().getIn().getHeader(CamelConstants.SEND_REQUEST_ID));
+        Assertions.assertEquals(sendSmsRequest.getDestination(), reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
     }
 
 }
