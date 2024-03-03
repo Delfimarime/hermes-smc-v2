@@ -2,6 +2,7 @@ package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.camel.common.RuleRouteBuilder;
 import com.raitonbl.hermes.smsc.config.common.BeanFactory;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
 import org.mockito.Mockito;
@@ -21,6 +22,8 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 import software.amazon.awssdk.utils.StringInputStream;
 
+import javax.cache.Cache;
+import javax.cache.Caching;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +38,13 @@ public class TestBeanFactory {
     public static final String QUEUE_URL_PREFIX = "https://sqs.af-south-1.localhost.localstack.cloud:4566/000000000000";
     public static List<String> queueNames = List.of("send-sms-queue", "received-sms-queue", "unsupported-pdu-queue", "delivery-receipt-queue");
     public static List<SendSmsRequest> requestQueue = new ArrayList<>();
-    public static List<Rule> ruleDefinition = new ArrayList<>();
+    public static List<Rule> ruleDefinition = null;
+
+    public static void setRules(List<Rule> definition) {
+        Optional.ofNullable(Caching.getCachingProvider().getCacheManager().getCache(RuleRouteBuilder.CACHE_NAME))
+                .ifPresent(Cache::clear);
+        TestBeanFactory.ruleDefinition = definition;
+    }
 
     @Primary
     @Bean(BeanFactory.AWS_SQS_CLIENT)
@@ -93,7 +102,7 @@ public class TestBeanFactory {
             return new ResponseInputStream<>(GetObjectResponse.builder()
                     .contentType(MediaType.APPLICATION_JSON_VALUE).build(), inputStream);
         };
-        Mockito.when(s3Client.getObject(any(GetObjectRequest.class),any(ResponseTransformer.class))).then(onS3GetObject);
+        Mockito.when(s3Client.getObject(any(GetObjectRequest.class), any(ResponseTransformer.class))).then(onS3GetObject);
         return s3Client;
     }
 

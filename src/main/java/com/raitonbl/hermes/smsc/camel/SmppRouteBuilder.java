@@ -15,14 +15,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class SmppRouteBuilder extends RouteBuilder {
     public static final String RECEIVER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_RECEIVER_CONNECTION";
-    public static final String TRANSCEIVER_CALLBACK_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CALLBACK";
+    private static final String TRANSCEIVER_CALLBACK_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CALLBACK";
     public static final String TRANSMITTER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_TRANSMITTER_CONNECTION";
-    public static final String TRANSCEIVER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CONNECTION";
+    private static final String TRANSCEIVER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CONNECTION";
 
     private HermesConfiguration configuration;
 
     @Override
     public void configure() {
+        if(this.configuration.getServices() ==null){
+            return;
+        }
         this.configuration.getServices().forEach((name, config) -> setSmppEndpoint(config, name));
     }
 

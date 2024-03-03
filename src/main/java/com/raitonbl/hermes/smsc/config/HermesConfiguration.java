@@ -2,6 +2,7 @@ package com.raitonbl.hermes.smsc.config;
 
 
 import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,9 +18,8 @@ import java.util.Map;
 public class HermesConfiguration {
     @NotNull
     private PublishConfiguration publishTo;
-    @NotNull
     private SendSmsListenerConfiguration listenTo;
-    @NotNull
+    @NotEmpty
     private Map<String, SmppConfiguration> services;
     private RuleConfiguration rulesDatasource;
 }

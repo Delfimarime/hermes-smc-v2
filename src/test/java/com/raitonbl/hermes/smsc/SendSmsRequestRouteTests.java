@@ -12,6 +12,8 @@ import org.apache.camel.*;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,7 +36,13 @@ class SendSmsRequestRouteTests {
     @Autowired
     ProducerTemplate template;
 
+    @BeforeEach
+    void init(){
+        TestBeanFactory.setRules(null);
+    }
+
     @Test
+    @Order(1)
     void sendSmsRequest_when_no_rules_and_throw_exception() {
         var sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
                 .from("+25884XXX0000").content("Hi").tags(null).build();
@@ -52,19 +60,21 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
+    @Order(2)
     void sendSmsRequest_when_single_rule_match_is_first() {
-        sendSmsRequest_when_match_any((smpp,from)-> List.of(
-                 Rule.builder().name("test").description("test")
-                         .spec(RuleSpec.builder().from(from).smpp(smpp).build())
-                         .build()
-         ));
+        sendSmsRequest_when_match_any((smpp, from) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(RuleSpec.builder().from(from).smpp(smpp).build())
+                        .build()
+        ));
     }
 
     @Test
+    @Order(3)
     void sendSmsRequest_when_single_rule_match_is_second() {
-        sendSmsRequest_when_match_any((smpp,from)-> List.of(
-                Rule.builder().name("v1").description("v1")
-                        .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v1").build())
+        sendSmsRequest_when_match_any((smpp, from) -> List.of(
+                Rule.builder().name("v4").description("v4")
+                        .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v4").build())
                         .build(),
                 Rule.builder().name("test").description("test")
                         .spec(RuleSpec.builder().from(from).smpp(smpp).build())
@@ -73,8 +83,9 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
+    @Order(4)
     void sendSmsRequest_when_single_rule_match_is_third() {
-        sendSmsRequest_when_match_any((smpp,from)-> List.of(
+        sendSmsRequest_when_match_any((smpp, from) -> List.of(
                 Rule.builder().name("v1").description("v1")
                         .spec(RuleSpec.builder().from(UUID.randomUUID().toString()).smpp("v1").build())
                         .build(),
@@ -88,15 +99,15 @@ class SendSmsRequestRouteTests {
     }
 
     void sendSmsRequest_when_match_any(BiFunction<String, String, List<Rule>> p) {
-        String from = "+25884XXX0000";
+        String from = UUID.randomUUID().toString();
         String targetSmpp = UUID.randomUUID().toString();
-        TestBeanFactory.ruleDefinition = p.apply(targetSmpp, from);
         var sendSmsRequest = SendSmsRequest.builder().id(UUID.randomUUID().toString())
                 .from(from).content("Hi").tags(null).build();
         AtomicReference<String> routeId = new AtomicReference<>();
         Assertions.assertThrows(DirectConsumerNotAvailableException.class,
                 () -> {
                     try {
+                        TestBeanFactory.setRules(p.apply(targetSmpp, from));
                         template.sendBody(SendSmsThroughSmppRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
                     } catch (CamelExecutionException ex) {
                         if (ex.getCause() instanceof DirectConsumerNotAvailableException) {

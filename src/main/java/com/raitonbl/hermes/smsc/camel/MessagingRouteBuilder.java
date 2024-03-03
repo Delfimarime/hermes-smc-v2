@@ -17,6 +17,9 @@ public class MessagingRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() {
+        if (configuration.getServices() == null || configuration.getServices().isEmpty()) {
+            return;
+        }
         setRoute(MessagingRouteType.DELIVERY_RECEIPT_ROUTE,
                 configuration.getPublishTo(), configuration.getPublishTo().getDeliveryReceiptChannel());
         setRoute(MessagingRouteType.RECEIVED_SMS_REQUEST_ROUTE,

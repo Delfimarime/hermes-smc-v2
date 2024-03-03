@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class RuleRouteBuilder extends RouteBuilder {
-    private static final String CACHE_NAME = "kv_rule";
+    public static final String CACHE_NAME = "kv_rule";
     private static final String RULE_CACHE_KEY = "default";
     public static final String READ_RULES_ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "_READ_RULES";
     public static final String DIRECT_TO_READ_RULES_ROUTE_ID = "direct:" + READ_RULES_ROUTE_ID;

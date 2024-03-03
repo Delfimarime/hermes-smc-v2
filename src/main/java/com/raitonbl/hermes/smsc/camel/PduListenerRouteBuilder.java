@@ -3,6 +3,8 @@ package com.raitonbl.hermes.smsc.camel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.asyncapi.ReceivedSmsRequest;
 import com.raitonbl.hermes.smsc.asyncapi.SmsDeliveryReceipt;
+import com.raitonbl.hermes.smsc.config.HermesConfiguration;
+import com.raitonbl.hermes.smsc.config.SendSmsListenerConfiguration;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -42,9 +44,14 @@ public  class PduListenerRouteBuilder extends RouteBuilder {
     );
 
     private  ObjectMapper objectMapper;
+    private HermesConfiguration configuration;
+
 
     @Override
     public void configure() throws Exception {
+        if (configuration.getServices() == null || configuration.getServices().isEmpty()) {
+            return;
+        }
         from("direct:" + ROUTE_ID)
                 .routeId(ROUTE_ID)
                 .routeDescription("Listens to smpp.PduEvent and submits it to an queue")
@@ -97,6 +104,10 @@ public  class PduListenerRouteBuilder extends RouteBuilder {
     @Inject
     public void setObjectMapper(ObjectMapper objectMapper){
         this.objectMapper = objectMapper;
+    }
+    @Inject
+    public void setConfiguration(HermesConfiguration configuration) {
+        this.configuration = configuration;
     }
 
 }
