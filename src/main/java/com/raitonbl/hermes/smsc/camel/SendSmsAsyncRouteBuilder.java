@@ -1,7 +1,8 @@
 package com.raitonbl.hermes.smsc.camel;
 
-import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.common.CamelConstants;
+import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
+import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.SendSmsListenerConfiguration;
 import jakarta.inject.Inject;
@@ -12,7 +13,7 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SendSmsRequestRouteBuilder extends RouteBuilder {
+public class SendSmsAsyncRouteBuilder extends RouteBuilder {
     public static final String ROUTE_ID = CamelConstants.ROUTE_PREFIX +"_SEND_MESSAGE_ASYNCHRONOUSLY";
     private SendSmsListenerConfiguration configuration;
 
@@ -26,7 +27,7 @@ public class SendSmsRequestRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, "Pulling message from Channel{\"name\":\"SEND_SMS_REQUEST\"}")
                 .unmarshal()
                     .json(JsonLibrary.Jackson, SendSmsRequest.class)
-                .to(SendSmsThroughSmppRouteBuilder.DIRECT_TO_ROUTE_ID)
+                .to(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID)
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
     }

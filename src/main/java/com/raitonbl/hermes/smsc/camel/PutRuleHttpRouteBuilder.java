@@ -1,10 +1,10 @@
-package com.raitonbl.hermes.smsc.camel.http;
+package com.raitonbl.hermes.smsc.camel;
 
-import com.raitonbl.hermes.smsc.camel.common.RuleRouteBuilder;
-import com.raitonbl.hermes.smsc.common.CamelConstants;
+import com.raitonbl.hermes.smsc.camel.model.Problem;
+import com.raitonbl.hermes.smsc.camel.engine.RuleRouteBuilder;
+import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.RuleConfiguration;
-import com.raitonbl.hermes.smsc.model.Problem;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -17,10 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 
-import java.util.Optional;
-
 @Component
-public class PutRuleEndpointRouteBuilder extends RouteBuilder {
+public class PutRuleHttpRouteBuilder extends RouteBuilder {
     public static final String PUT_RULES_ENDPOINT_ROUTE_ID = CamelConstants.ROUTE_PREFIX +"_HTTP_PUT_RULES";
     private static final String ENDPOINT_OPERATION_ID = "setRules";
     private RuleConfiguration configuration;

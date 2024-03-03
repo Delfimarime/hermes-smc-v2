@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PublishConfiguration;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Setter
 @Component
-public class MessagingRouteBuilder extends RouteBuilder {
+public class PublishPduEventRouteBuilder extends RouteBuilder {
 
     HermesConfiguration configuration;
 
@@ -20,15 +20,15 @@ public class MessagingRouteBuilder extends RouteBuilder {
         if (configuration.getServices() == null || configuration.getServices().isEmpty()) {
             return;
         }
-        setRoute(MessagingRouteType.DELIVERY_RECEIPT_ROUTE,
+        setRoute(PublishPduEventRouteType.DELIVERY_RECEIPT_ROUTE,
                 configuration.getPublishTo(), configuration.getPublishTo().getDeliveryReceiptChannel());
-        setRoute(MessagingRouteType.RECEIVED_SMS_REQUEST_ROUTE,
+        setRoute(PublishPduEventRouteType.RECEIVED_SMS_REQUEST_ROUTE,
                 configuration.getPublishTo(), configuration.getPublishTo().getReceivedSmsChannel());
-        setRoute(MessagingRouteType.UNSUPPORTED_PDU_EVENT_ROUTE,
+        setRoute(PublishPduEventRouteType.UNSUPPORTED_PDU_EVENT_ROUTE,
                 configuration.getPublishTo(), configuration.getPublishTo().getUnsupportedPduChannel());
     }
 
-    private void setRoute(MessagingRouteType routeType, PublishConfiguration configuration, MessagingSystem ms) {
+    private void setRoute(PublishPduEventRouteType routeType, PublishConfiguration configuration, MessagingSystem ms) {
         from("direct:" + routeType.routeId)
                 .routeId(routeType.routeId)
                 .routeDescription(String.format("Publishes %s events into %s", routeType.eventType,

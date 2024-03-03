@@ -1,11 +1,10 @@
 package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.common.RuleRouteBuilder;
-import com.raitonbl.hermes.smsc.config.common.BeanFactory;
+import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.camel.engine.RuleRouteBuilder;
+import com.raitonbl.hermes.smsc.config.BeanFactory;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
-import org.apache.camel.Exchange;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

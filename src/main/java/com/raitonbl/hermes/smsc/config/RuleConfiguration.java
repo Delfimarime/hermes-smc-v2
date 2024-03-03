@@ -1,8 +1,7 @@
 package com.raitonbl.hermes.smsc.config;
 
-import com.raitonbl.hermes.smsc.config.common.BeanFactory;
-import com.raitonbl.hermes.smsc.config.common.CamelConfiguration;
-import com.raitonbl.hermes.smsc.config.common.ConfigurationUtils;
+import com.raitonbl.hermes.smsc.sdk.CamelConfiguration;
+import com.raitonbl.hermes.smsc.sdk.ConfigurationUtils;
 import com.raitonbl.hermes.smsc.config.rule.DatasourceType;
 import lombok.Getter;
 import lombok.Setter;

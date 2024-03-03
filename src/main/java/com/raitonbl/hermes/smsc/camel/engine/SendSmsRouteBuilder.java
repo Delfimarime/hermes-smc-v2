@@ -1,8 +1,7 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.engine;
 
-import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.common.RuleRouteBuilder;
-import com.raitonbl.hermes.smsc.common.CamelConstants;
+import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
 import com.raitonbl.hermes.smsc.config.rule.TagCriteria;
@@ -17,7 +16,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 @Component
-public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
+public class SendSmsRouteBuilder extends RouteBuilder {
     private static final String ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "SEND_MESSAGE";
     public static final String DIRECT_TO_ROUTE_ID = "direct:" + ROUTE_ID;
     private static final String RULES_QUEUE_HEADER = CamelConstants.HEADER_PREFIX + "Rules";
@@ -35,7 +34,7 @@ public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
                 .choice()
                     .when(header(TARGET_SMPP_HEADER).isNotNull())
                         .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
-                        .setHeader(HermesConstants.SEND_REQUEST_ID, simple("${body.id}"))
+                        .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
                         .setBody(simple("${body.content}"))
                         .toD("direct:${headers."+TARGET_SMPP_HEADER+"}")
                     .otherwise()
@@ -66,7 +65,7 @@ public class SendSmsThroughSmppRouteBuilder extends RouteBuilder {
         }
         if (isCompatible(rule, request)) {
             exchange.getIn().setHeader(TARGET_SMPP_HEADER, String
-                    .format(SmppRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())
+                    .format(SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())
                     .toUpperCase()
             );
         }

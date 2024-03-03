@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.asyncapi;
+package com.raitonbl.hermes.smsc.camel.asyncapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;

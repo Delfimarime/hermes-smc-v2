@@ -1,12 +1,11 @@
 package com.raitonbl.hermes.smsc.config.messaging;
 
-import com.raitonbl.hermes.smsc.config.common.ConfigurationUtils;
+import com.raitonbl.hermes.smsc.sdk.ConfigurationUtils;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 @Getter
 @Setter

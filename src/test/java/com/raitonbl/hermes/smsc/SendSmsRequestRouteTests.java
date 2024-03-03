@@ -1,10 +1,10 @@
 package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.raitonbl.hermes.smsc.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.HermesConstants;
-import com.raitonbl.hermes.smsc.camel.SendSmsThroughSmppRouteBuilder;
-import com.raitonbl.hermes.smsc.camel.SmppRouteBuilder;
+import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.sdk.CamelConstants;
+import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
+import com.raitonbl.hermes.smsc.camel.engine.SmppConnectionRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
@@ -55,7 +55,7 @@ class SendSmsRequestRouteTests {
         Assertions.assertThrows(CannotDetermineTargetSmppConnectionException.class,
                 () -> {
                     try {
-                        template.sendBody(SendSmsThroughSmppRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
+                        template.sendBody(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
                     } catch (CamelExecutionException ex) {
                         if (ex.getCause() instanceof CannotDetermineTargetSmppConnectionException) {
                             throw ex.getCause();
@@ -110,7 +110,7 @@ class SendSmsRequestRouteTests {
                 .from(from).content("Hi").tags(null).build();
 
         String smppId = UUID.randomUUID().toString();
-        String routeId = SmppRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(smppId);
+        String routeId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(smppId);
 
         AtomicReference<Exchange> reference = new AtomicReference<>(null);
         context.addRoutes(new RouteBuilder() {
@@ -125,11 +125,11 @@ class SendSmsRequestRouteTests {
 
         Assertions.assertDoesNotThrow(() -> {
             TestBeanFactory.setRules(p.apply(from, smppId));
-            template.sendBody(SendSmsThroughSmppRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
+            template.sendBody(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
         });
 
         Assertions.assertEquals(sendSmsRequest.getContent(),reference.get().getIn().getBody());
-        Assertions.assertEquals(sendSmsRequest.getId(),reference.get().getIn().getHeader(HermesConstants.SEND_REQUEST_ID));
+        Assertions.assertEquals(sendSmsRequest.getId(),reference.get().getIn().getHeader(CamelConstants.SEND_REQUEST_ID));
         Assertions.assertEquals(sendSmsRequest.getDestination(),reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
     }
 

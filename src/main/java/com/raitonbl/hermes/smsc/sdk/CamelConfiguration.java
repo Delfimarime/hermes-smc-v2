@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.config.common;
+package com.raitonbl.hermes.smsc.sdk;
 
 public interface CamelConfiguration {
     String toCamelURI();

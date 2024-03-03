@@ -1,5 +1,6 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.engine;
 
+import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConnectionType;
@@ -13,11 +14,11 @@ import org.springframework.stereotype.Component;
 
 @Builder
 @Component
-public class SmppRouteBuilder extends RouteBuilder {
-    public static final String RECEIVER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_RECEIVER_CONNECTION";
-    private static final String TRANSCEIVER_CALLBACK_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CALLBACK";
-    public static final String TRANSMITTER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_TRANSMITTER_CONNECTION";
-    private static final String TRANSCEIVER_ROUTE_ID_FORMAT = "HERMES_SMSC_%s_TRANSCEIVER_CONNECTION";
+public class SmppConnectionRouteBuilder extends RouteBuilder {
+    public static final String RECEIVER_ROUTE_ID_FORMAT = CamelConstants.SYSTEM_ROUTE_PREFIX+"%s_RECEIVER_CONNECTION";
+    private static final String TRANSCEIVER_CALLBACK_FORMAT = CamelConstants.SYSTEM_ROUTE_PREFIX+"%s_TRANSCEIVER_CALLBACK";
+    public static final String TRANSMITTER_ROUTE_ID_FORMAT = CamelConstants.SYSTEM_ROUTE_PREFIX+"_%s_TRANSMITTER_CONNECTION";
+    private static final String TRANSCEIVER_ROUTE_ID_FORMAT = CamelConstants.SYSTEM_ROUTE_PREFIX+"%s_TRANSCEIVER_CONNECTION";
 
     private HermesConfiguration configuration;
 
@@ -44,9 +45,9 @@ public class SmppRouteBuilder extends RouteBuilder {
             from("direct:" + redirectTo)
                     .id(redirectTo.toUpperCase())
                     .routeId(redirectTo)
-                    .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
+                    .setHeader(CamelConstants.MESSAGE_RECEIVED_BY, simple(name))
                     .log(LoggingLevel.INFO, "Receiving SendSmsRequest from Smpp{\"name\":\""+name+"\"}")
-                    .to(PduListenerRouteBuilder.DIRECT_TO)
+                    .to(SmppConnectionListenerRouterBuilder.DIRECT_TO)
                     .end();
             targetConfiguration = configuration.clone();
             targetConfiguration.setRedirectTo(redirectTo);
@@ -55,7 +56,7 @@ public class SmppRouteBuilder extends RouteBuilder {
         from("direct:" + routeId)
                 .routeId(routeId.toUpperCase())
                 .routeDescription(String.format("Sends an PDU to %s Short message service center", name))
-                .log(LoggingLevel.DEBUG, "Sending SendSmsRequest{\"id\":\"${headers."+HermesConstants.SEND_REQUEST_ID+"}\"} through Smpp{\"name\":\""+name+"\"}")
+                .log(LoggingLevel.DEBUG, "Sending SendSmsRequest{\"id\":\"${headers."+ CamelConstants.SEND_REQUEST_ID+"}\"} through Smpp{\"name\":\""+name+"\"}")
                 .to(targetConfiguration.toCamelURI())
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
@@ -65,10 +66,10 @@ public class SmppRouteBuilder extends RouteBuilder {
         from(configuration.toCamelURI())
                 .routeId(String.format(RECEIVER_ROUTE_ID_FORMAT, name).toUpperCase())
                 .routeDescription(String.format("Listens to an PDU from %s Short message service center", name))
-                .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
+                .setHeader(CamelConstants.MESSAGE_RECEIVED_BY, simple(name))
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
                 .log(LoggingLevel.INFO, "Receiving SendSmsRequest from Smpp{\"name\":\""+name+"\"}")
-                .to(PduListenerRouteBuilder.DIRECT_TO)
+                .to(SmppConnectionListenerRouterBuilder.DIRECT_TO)
                 .end();
     }
 

@@ -1,6 +1,6 @@
 package com.raitonbl.hermes.smsc.config.smpp;
 
-import com.raitonbl.hermes.smsc.config.common.ConfigurationUtils;
+import com.raitonbl.hermes.smsc.sdk.ConfigurationUtils;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;

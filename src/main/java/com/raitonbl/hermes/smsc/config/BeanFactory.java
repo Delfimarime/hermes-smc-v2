@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.config.common;
+package com.raitonbl.hermes.smsc.config;
 
 import com.ctc.wstx.shaded.msv_core.util.Uri;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
