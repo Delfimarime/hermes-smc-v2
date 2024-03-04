@@ -16,6 +16,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.apache.commons.validator.routines.RegexValidator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 @SpringBootTest
 @CamelSpringBootTest
@@ -105,7 +107,7 @@ class SendSmsRequestRouteTests {
         String destination = "25884XXX0001";
         sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
-                        .spec(RuleSpec.builder().destinationAddr("^25884X").smpp(smpp).build())
+                        .spec(RuleSpec.builder().destinationAddr("^25884XXX").smpp(smpp).build())
                         .build()
         ),  b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null));
     }

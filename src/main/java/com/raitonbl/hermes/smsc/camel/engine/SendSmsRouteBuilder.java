@@ -9,10 +9,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
-import org.apache.commons.validator.routines.RegexValidator;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Component
@@ -32,21 +33,21 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, "Confronting SendSmsRequest[\"id\": \"*\"] with Rule[\"name\":\"${headers." + TARGET_RULE_HEADER + ".name}\"]")
                 .process(this::setSmppHeader)
                 .choice()
-                    .when(header(TARGET_SMPP_HEADER).isNotNull())
-                        .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
-                        .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
-                        .setBody(simple("${body.content}"))
-                        .toD("direct:${headers."+TARGET_SMPP_HEADER+"}")
-                    .otherwise()
-                        .process(this::setTargetRule)
-                        .choice()
-                            .when(header(TARGET_RULE_HEADER).isNotNull())
-                                .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
-                            .otherwise()
-                                .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
-                                .throwException(CannotDetermineTargetSmppConnectionException.class,"SendSmsRequest[\"id\":\"${body.id}\"]")
-                        .endChoice()
-                    .endChoice()
+                .when(header(TARGET_SMPP_HEADER).isNotNull())
+                .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
+                .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
+                .setBody(simple("${body.content}"))
+                .toD("direct:${headers." + TARGET_SMPP_HEADER + "}")
+                .otherwise()
+                .process(this::setTargetRule)
+                .choice()
+                .when(header(TARGET_RULE_HEADER).isNotNull())
+                .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
+                .otherwise()
+                .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
+                .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
+                .endChoice()
+                .endChoice()
                 .end();
 
         from(DIRECT_TO_ROUTE_ID)
@@ -63,7 +64,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
         if (rule == null || request == null) {
             return;
         }
-        if (isCompatible(rule, request)) {
+        if (canSendSms(rule, request)) {
             exchange.getIn().setHeader(TARGET_SMPP_HEADER, String
                     .format(SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())
                     .toUpperCase()
@@ -71,40 +72,53 @@ public class SendSmsRouteBuilder extends RouteBuilder {
         }
     }
 
-    private boolean isCompatible(Rule rule, SendSmsRequest request) {
-        return isFromCompatible(rule, request) &&
-                isDestinationAddrCompatible(rule, request) &&
-                areTagsCompatible(rule, request);
+    private boolean canSendSms(Rule rule, SendSmsRequest request) {
+        return canSendSmsSinceFromIsEqualTo(rule, request) && canSendSmsSinceDestinationMatchesPattern(rule, request)
+                && canSendSmsSinceTagDefinitionMatch(rule, request);
     }
 
-    private boolean isFromCompatible(Rule rule, SendSmsRequest request) {
+    private boolean canSendSmsSinceFromIsEqualTo(Rule rule, SendSmsRequest request) {
         return rule.getSpec().getFrom() == null || rule.getSpec().getFrom().equals(request.getFrom());
     }
 
-    private boolean isDestinationAddrCompatible(Rule rule, SendSmsRequest request) {
+    private boolean canSendSmsSinceDestinationMatchesPattern(Rule rule, SendSmsRequest request) {
         String destinationAddr = rule.getSpec().getDestinationAddr();
-        return destinationAddr == null || new RegexValidator(destinationAddr).isValid(request.getDestination());
+        if (destinationAddr == null) {
+            return true;
+        }
+        Pattern pattern = Pattern.compile(destinationAddr);
+        return pattern.asPredicate().test(request.getDestination());
     }
 
-    private boolean areTagsCompatible(Rule rule, SendSmsRequest request) {
+    private boolean canSendSmsSinceTagDefinitionMatch(Rule rule, SendSmsRequest request) {
         TagCriteria[] tagsCriteria = rule.getSpec().getTags();
         if (tagsCriteria == null) {
-            return true; // No tag criteria, so always compatible
+            return true;
         }
         for (TagCriteria criteria : tagsCriteria) {
-            if (!isTagCriteriaCompatible(criteria, request.getTags())) {
-                return false; // Early exit if a mismatch is found
+            if (!isTagCriteriaTrue(criteria, request.getTags())) {
+                return false;
             }
         }
 
         return true;
     }
 
-    private boolean isTagCriteriaCompatible(TagCriteria criteria, String[] tags) {
+    private boolean isTagCriteriaTrue(TagCriteria criteria, String[] tags) {
+        BiPredicate<String[], String> f = (seq, v) -> {
+            for (String p : seq) {
+                Pattern pattern = Pattern.compile(p);
+                if (pattern.asPredicate().test(v)) {
+                    return true;
+                }
+
+            }
+            return false;
+        };
         return criteria.getAnyOf() != null ?
-                Stream.of(tags).anyMatch(tag -> new RegexValidator(criteria.getAnyOf()).isValid(tag)) :
+                Stream.of(tags).anyMatch(tag -> f.test(criteria.getAnyOf(), tag)) :
                 Stream.of(criteria.getAllOf())
-                        .allMatch(regex -> Stream.of(tags).anyMatch(tag -> new RegexValidator(regex).isValid(tag)));
+                        .allMatch(regex -> Stream.of(tags).anyMatch(tag -> f.test(new String[]{regex}, tag)));
     }
 
     @SuppressWarnings({"unchecked"})
