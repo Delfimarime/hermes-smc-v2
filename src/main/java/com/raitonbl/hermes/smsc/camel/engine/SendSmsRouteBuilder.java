@@ -86,6 +86,9 @@ public class SendSmsRouteBuilder extends RouteBuilder {
         if (destinationAddr == null) {
             return true;
         }
+        if (request.getDestination() == null) {
+            return false;
+        }
         Pattern pattern = Pattern.compile(destinationAddr);
         return pattern.asPredicate().test(request.getDestination());
     }
@@ -107,6 +110,12 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     private boolean isTagCriteriaTrue(TagCriteria criteria, String[] tags) {
         BiPredicate<String[], String> f = (seq, v) -> {
             for (String p : seq) {
+                if (p == null) {
+                    return true;
+                }
+                if (v == null) {
+                    return false;
+                }
                 Pattern pattern = Pattern.compile(p);
                 if (pattern.asPredicate().test(v)) {
                     return true;
