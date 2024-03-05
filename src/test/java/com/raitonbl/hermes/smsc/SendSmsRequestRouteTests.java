@@ -2,6 +2,7 @@ package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.config.rule.TagCriteria;
 import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.engine.SmppConnectionRouteBuilder;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import software.amazon.awssdk.services.s3.model.Tag;
 
 import java.util.List;
 import java.util.UUID;
@@ -109,6 +111,78 @@ class SendSmsRequestRouteTests {
                         .build()
         ));
     }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_any_tag() throws Exception {
+        String destination = "25884XXX0001";
+        sendSmsRoute_then_assert_exchange(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
+                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z","ANY"}), (from, smpp) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(
+                                RuleSpec.builder().destinationAddr(destination)
+                                        .smpp(smpp).tags(new TagCriteria[]{
+                                                        TagCriteria.builder()
+                                                                .anyOf(new String[]{"ANY"}).build()
+                                                }
+                                        ).build()
+                        )
+                        .build()
+        ));
+    }
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_any_tag_without_match() {
+        String destination = "25884XXX0001";
+        sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
+                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z"}), (from, smpp) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(
+                                RuleSpec.builder().destinationAddr(destination)
+                                        .smpp(smpp).tags(new TagCriteria[]{
+                                                        TagCriteria.builder()
+                                                                .anyOf(new String[]{"ANY"}).build()
+                                                }
+                                        ).build()
+                        )
+                        .build()
+        ));
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_every_tag() throws Exception {
+        String destination = "25884XXX0001";
+        sendSmsRoute_then_assert_exchange(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
+                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z","ANY"}), (from, smpp) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(
+                                RuleSpec.builder().destinationAddr(destination)
+                                        .smpp(smpp).tags(new TagCriteria[]{
+                                                        TagCriteria.builder()
+                                                                .allOf(new String[]{"ANY","Z"}).build()
+                                                }
+                                        ).build()
+                        )
+                        .build()
+        ));
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_every_tag_without_match() {
+        String destination = "25884XXX0001";
+        sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
+                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z"}), (from, smpp) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(
+                                RuleSpec.builder().destinationAddr(destination)
+                                        .smpp(smpp).tags(new TagCriteria[]{
+                                                        TagCriteria.builder()
+                                                                .allOf(new String[]{"X","B"}).build()
+                                                }
+                                        ).build()
+                        )
+                        .build()
+        ));
+    }
+
 
     @Test
     void sendSmsRoute_then_assert_exchange_for_destination_doesnt_match_pattern() {

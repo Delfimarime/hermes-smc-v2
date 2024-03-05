@@ -9,6 +9,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -31,54 +32,41 @@ public class SendSmsRouteBuilder extends RouteBuilder {
         from(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                 .routeId(NEXT_RULE_ROUTE_ID)
                 .log(LoggingLevel.DEBUG, "Confronting SendSmsRequest[\"id\": \"*\"] with Rule[\"name\":\"${headers." + TARGET_RULE_HEADER + ".name}\"]")
-                .process(this::setSmppHeader)
+                .process(this::setTargetSmppRouteId)
                 .choice()
-                .when(header(TARGET_SMPP_HEADER).isNotNull())
-                .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
-                .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
-                .setBody(simple("${body.content}"))
-                .toD("direct:${headers." + TARGET_SMPP_HEADER + "}")
-                .otherwise()
-                .process(this::setTargetRule)
-                .choice()
-                .when(header(TARGET_RULE_HEADER).isNotNull())
-                .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
-                .otherwise()
-                .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
-                .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
-                .endChoice()
-                .endChoice()
+                    .when(header(TARGET_SMPP_HEADER).isNotNull())
+                        .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
+                        .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
+                        .setBody(simple("${body.content}"))
+                        .toD("direct:${headers." + TARGET_SMPP_HEADER + "}")
+                    .otherwise()
+                        .process(this::setTargetSmpp)
+                        .choice()
+                            . when(header(TARGET_RULE_HEADER).isNotNull())
+                            .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
+                        .otherwise()
+                            .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
+                            .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
+                        .endChoice()
+                    .endChoice()
                 .end();
 
         from(DIRECT_TO_ROUTE_ID)
                 .routeId(ROUTE_ID)
-                .enrich(RuleRouteBuilder.DIRECT_TO_READ_RULES_ROUTE_ID, this::setRouteHeader)
-                .process(this::setTargetRule)
+                .enrich(RuleRouteBuilder.DIRECT_TO_READ_RULES_ROUTE_ID, this::setRulesList)
+                .process(this::setTargetSmpp)
                 .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                 .removeHeader(TARGET_RULE_HEADER).removeHeader(TARGET_SMPP_HEADER).removeHeader(RULES_QUEUE_HEADER);
     }
 
-    private void setSmppHeader(Exchange exchange) {
-        Rule rule = exchange.getIn().getHeader(TARGET_RULE_HEADER, Rule.class);
-        SendSmsRequest request = exchange.getIn().getBody(SendSmsRequest.class);
-        if (rule == null || request == null) {
-            return;
-        }
-        if (canSendSms(rule, request)) {
-            exchange.getIn().setHeader(TARGET_SMPP_HEADER, String
-                    .format(SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())
-                    .toUpperCase()
-            );
-        }
-    }
-
     private boolean canSendSms(Rule rule, SendSmsRequest request) {
-        return canSendSmsSinceFromIsEqualTo(rule, request) && canSendSmsSinceDestinationMatchesPattern(rule, request)
+        return canSendSmsSinceFromIsEqualTo(rule, request)
+                && canSendSmsSinceDestinationMatchesPattern(rule, request)
                 && canSendSmsSinceTagDefinitionMatch(rule, request);
     }
 
     private boolean canSendSmsSinceFromIsEqualTo(Rule rule, SendSmsRequest request) {
-        return rule.getSpec().getFrom() == null || rule.getSpec().getFrom().equals(request.getFrom());
+        return rule.getSpec().getFrom() == null || StringUtils.equals(rule.getSpec().getFrom(),request.getFrom());
     }
 
     private boolean canSendSmsSinceDestinationMatchesPattern(Rule rule, SendSmsRequest request) {
@@ -99,28 +87,19 @@ public class SendSmsRouteBuilder extends RouteBuilder {
             return true;
         }
         for (TagCriteria criteria : tagsCriteria) {
-            if (!isTagCriteriaTrue(criteria, request.getTags())) {
+            if (!canSendSmsSinceTagCriteriaMatch(criteria, request.getTags())) {
                 return false;
             }
         }
-
         return true;
     }
 
-    private boolean isTagCriteriaTrue(TagCriteria criteria, String[] tags) {
+    private boolean canSendSmsSinceTagCriteriaMatch(TagCriteria criteria, String[] tags) {
         BiPredicate<String[], String> f = (seq, v) -> {
             for (String p : seq) {
-                if (p == null) {
+                if (StringUtils.equals(p, v)) {
                     return true;
                 }
-                if (v == null) {
-                    return false;
-                }
-                Pattern pattern = Pattern.compile(p);
-                if (pattern.asPredicate().test(v)) {
-                    return true;
-                }
-
             }
             return false;
         };
@@ -131,7 +110,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     }
 
     @SuppressWarnings({"unchecked"})
-    private void setTargetRule(Exchange exchange) {
+    private void setTargetSmpp(Exchange exchange) {
         Queue<Rule> queue = (Queue<Rule>) exchange.getIn().getHeader(RULES_QUEUE_HEADER);
         if (queue.isEmpty()) {
             exchange.getIn().setHeader(TARGET_RULE_HEADER, null);
@@ -141,10 +120,23 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     }
 
     @SuppressWarnings({"unchecked"})
-    private Exchange setRouteHeader(Exchange fromRequest, Exchange fromRoute) {
+    private Exchange setRulesList(Exchange fromRequest, Exchange fromRoute) {
         List<Rule> collection = fromRoute.getIn().getBody(List.class);
         fromRequest.getIn().setHeader(RULES_QUEUE_HEADER, new ArrayDeque<>(collection));
         return fromRequest;
     }
 
+    private void setTargetSmppRouteId(Exchange exchange) {
+        Rule rule = exchange.getIn().getHeader(TARGET_RULE_HEADER, Rule.class);
+        SendSmsRequest request = exchange.getIn().getBody(SendSmsRequest.class);
+        if (rule == null || request == null) {
+            return;
+        }
+        if (canSendSms(rule, request)) {
+            exchange.getIn().setHeader(TARGET_SMPP_HEADER, String
+                    .format(SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())
+                    .toUpperCase()
+            );
+        }
+    }
 }
