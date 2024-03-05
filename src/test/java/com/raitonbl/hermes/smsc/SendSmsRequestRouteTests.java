@@ -2,14 +2,14 @@ package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.config.rule.TagCriteria;
-import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.engine.SmppConnectionRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
 import com.raitonbl.hermes.smsc.config.rule.RuleSpec;
+import com.raitonbl.hermes.smsc.config.rule.TagCriteria;
+import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
@@ -17,19 +17,22 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.apache.commons.lang.NotImplementedException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import software.amazon.awssdk.services.s3.model.Tag;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 @SpringBootTest
 @CamelSpringBootTest
@@ -50,7 +53,7 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
-    void sendSmsRequest_when_no_rules_and_throw_exception() {
+    void sendSmsRequest_when_no_rules_and_throw_exception() throws Exception{
         sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString())
                 .from("+25884XXX0000").content("Hi").tags(null), null);
     }
@@ -116,7 +119,7 @@ class SendSmsRequestRouteTests {
     void sendSmsRoute_then_assert_exchange_for_any_tag() throws Exception {
         String destination = "25884XXX0001";
         sendSmsRoute_then_assert_exchange(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
-                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z","ANY"}), (from, smpp) -> List.of(
+                .destination(destination).content("Hi").tags(new String[]{"X", "Y", "Z", "ANY"}), (from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
                         .spec(
                                 RuleSpec.builder().destinationAddr(destination)
@@ -129,11 +132,12 @@ class SendSmsRequestRouteTests {
                         .build()
         ));
     }
+
     @Test
-    void sendSmsRoute_then_assert_exchange_for_any_tag_without_match() {
+    void sendSmsRoute_then_assert_exchange_for_any_tag_without_match() throws Exception {
         String destination = "25884XXX0001";
         sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
-                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z"}), (from, smpp) -> List.of(
+                .destination(destination).content("Hi").tags(new String[]{"X", "Y", "Z"}), (from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
                         .spec(
                                 RuleSpec.builder().destinationAddr(destination)
@@ -151,13 +155,13 @@ class SendSmsRequestRouteTests {
     void sendSmsRoute_then_assert_exchange_for_every_tag() throws Exception {
         String destination = "25884XXX0001";
         sendSmsRoute_then_assert_exchange(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
-                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z","ANY"}), (from, smpp) -> List.of(
+                .destination(destination).content("Hi").tags(new String[]{"X", "Y", "Z", "ANY"}), (from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
                         .spec(
                                 RuleSpec.builder().destinationAddr(destination)
                                         .smpp(smpp).tags(new TagCriteria[]{
                                                         TagCriteria.builder()
-                                                                .allOf(new String[]{"ANY","Z"}).build()
+                                                                .allOf(new String[]{"ANY", "Z"}).build()
                                                 }
                                         ).build()
                         )
@@ -166,16 +170,16 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
-    void sendSmsRoute_then_assert_exchange_for_every_tag_without_match() {
+    void sendSmsRoute_then_assert_exchange_for_every_tag_without_match() throws Exception {
         String destination = "25884XXX0001";
         sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString())
-                .destination(destination).content("Hi").tags(new String[]{"X","Y","Z"}), (from, smpp) -> List.of(
+                .destination(destination).content("Hi").tags(new String[]{"X", "Y", "Z"}), (from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
                         .spec(
                                 RuleSpec.builder().destinationAddr(destination)
                                         .smpp(smpp).tags(new TagCriteria[]{
                                                         TagCriteria.builder()
-                                                                .allOf(new String[]{"X","B"}).build()
+                                                                .allOf(new String[]{"X", "B"}).build()
                                                 }
                                         ).build()
                         )
@@ -183,9 +187,30 @@ class SendSmsRequestRouteTests {
         ));
     }
 
+    @Test
+    void sendSmsRoute_then_assert_exchange_in_case_first_smpp_throws_exception() throws Exception {
+        String target="local";
+        String routeId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(target);
+        sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
+                Rule.builder().name("test").description("test")
+                        .spec(RuleSpec.builder().from(from).smpp(target).build())
+                        .build(),
+                Rule.builder().name("test").description("test")
+                        .spec(RuleSpec.builder().from(from).smpp(smpp).build())
+                        .build()
+        ), new RouteBuilder() {
+            @Override
+            public void configure() {
+                from("direct:" + routeId.toUpperCase())
+                        .routeId(routeId)
+                        .throwException(new NotImplementedException("vmz"))
+                        .end();
+            }
+        });
+    }
 
     @Test
-    void sendSmsRoute_then_assert_exchange_for_destination_doesnt_match_pattern() {
+    void sendSmsRoute_then_assert_exchange_for_destination_doesnt_match_pattern() throws Exception {
         sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString())
                 .from("+25884XXX0000").content("Hi").tags(null), (from, smpp) -> List.of(
                 Rule.builder().name("test").description("test")
@@ -194,11 +219,12 @@ class SendSmsRequestRouteTests {
         ));
     }
 
-    void sendSmsRoute_then_assert_exchange(BiFunction<String, String, List<Rule>> getRuleList) throws Exception {
-        sendSmsRoute_then_assert_exchange(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString()).content("Hi").tags(null), getRuleList);
+    void sendSmsRoute_then_assert_exchange(BiFunction<String, String, List<Rule>> getRuleList, RouteBuilder... bs) throws Exception {
+        sendSmsRoute_then_assert_exchange(b -> b.id(UUID.randomUUID().toString()).from(UUID.randomUUID().toString()).content("Hi").tags(null), getRuleList, bs);
     }
 
-    void sendSmsRoute_then_assert_exchange(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRuleList) throws Exception {
+    void sendSmsRoute_then_assert_exchange(Consumer<SendSmsRequest.SendSmsRequestBuilder> c,
+                                           BiFunction<String, String, List<Rule>> getRules, RouteBuilder... bs) throws Exception {
         String smppId = UUID.randomUUID().toString();
         String routeId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(smppId);
 
@@ -212,13 +238,17 @@ class SendSmsRequestRouteTests {
                         .end();
             }
         });
-
+        if (bs != null) {
+            for (RouteBuilder b : bs) {
+                context.addRoutes(b);
+            }
+        }
         SendSmsRequest.SendSmsRequestBuilder builder = SendSmsRequest.builder();
         c.accept(builder);
         SendSmsRequest sendSmsRequest = builder.build();
 
         Assertions.assertDoesNotThrow(() -> {
-            TestBeanFactory.setRules(getRuleList.apply(sendSmsRequest.getFrom(), smppId));
+            TestBeanFactory.setRules(getRules.apply(sendSmsRequest.getFrom(), smppId));
             template.sendBody(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
         });
 
@@ -227,11 +257,16 @@ class SendSmsRequestRouteTests {
         Assertions.assertEquals(sendSmsRequest.getDestination(), reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
     }
 
-    void sendSmsRoute_then_assert_cannot_determine_target_smpp(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRuleList) {
+    void sendSmsRoute_then_assert_cannot_determine_target_smpp(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRuleList, RouteBuilder... bs) throws Exception {
         String smppId = UUID.randomUUID().toString();
         SendSmsRequest.SendSmsRequestBuilder builder = SendSmsRequest.builder();
         c.accept(builder);
         SendSmsRequest sendSmsRequest = builder.build();
+        if (bs != null) {
+            for (RouteBuilder b : bs) {
+                context.addRoutes(b);
+            }
+        }
         Assertions.assertThrows(CannotDetermineTargetSmppConnectionException.class,
                 () -> {
                     try {

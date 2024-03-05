@@ -24,30 +24,44 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     private static final String RULES_QUEUE_HEADER = CamelConstants.HEADER_PREFIX + "Rules";
     private static final String TARGET_RULE_HEADER = CamelConstants.HEADER_PREFIX + "TargetRule";
     public static final String TARGET_SMPP_HEADER = CamelConstants.HEADER_PREFIX + "TargetSmpp";
-    private static final String NEXT_RULE_ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "DETERMINE_RULE";
+    private static final String NEXT_RULE_ROUTE_ID = ROUTE_ID + "_GET_RULE";
     private static final String DIRECT_TO_NEXT_RULE_ROUTE_ID = "direct:" + NEXT_RULE_ROUTE_ID;
+    private static final String PROCEED_TO_NEXT_ROUTE_ID = ROUTE_ID + "_PROCEED";
+    private static final String DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID = "direct:" + PROCEED_TO_NEXT_ROUTE_ID;
 
     @Override
     public void configure() throws Exception {
+        from(DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID)
+                .routeId(PROCEED_TO_NEXT_ROUTE_ID)
+                .process(this::setTargetSmpp)
+                .choice()
+                    .when(header(TARGET_RULE_HEADER).isNotNull())
+                        .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
+                    .otherwise()
+                        .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
+                        .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
+                    .end()
+                .end();
+
         from(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                 .routeId(NEXT_RULE_ROUTE_ID)
                 .log(LoggingLevel.DEBUG, "Confronting SendSmsRequest[\"id\": \"*\"] with Rule[\"name\":\"${headers." + TARGET_RULE_HEADER + ".name}\"]")
                 .process(this::setTargetSmppRouteId)
                 .choice()
                     .when(header(TARGET_SMPP_HEADER).isNotNull())
-                        .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
-                        .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
-                        .setBody(simple("${body.content}"))
-                        .toD("direct:${headers." + TARGET_SMPP_HEADER + "}")
-                    .otherwise()
-                        .process(this::setTargetSmpp)
-                        .choice()
-                            . when(header(TARGET_RULE_HEADER).isNotNull())
-                            .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
-                        .otherwise()
-                            .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
-                            .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
+                        .doTry()
+                            .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
+                            .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
+                            .setBody(simple("${body.content}"))
+                            .toD("direct:${headers." + TARGET_SMPP_HEADER + "}")
+                        .doCatch(Exception.class)
+                            .log(LoggingLevel.ERROR,"${exception.stacktrace}")
+                            // TODO REMOUNT OBJECT
+                            .to(DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID)
+                        .endDoTry()
                         .endChoice()
+                    .otherwise()
+                        .to(DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID)
                     .endChoice()
                 .end();
 
