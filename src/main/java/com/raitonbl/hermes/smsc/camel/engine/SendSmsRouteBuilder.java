@@ -1,6 +1,7 @@
 package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.config.rule.CannotSendSmsRequestException;
 import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
@@ -40,9 +41,13 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                     .when(header(TARGET_RULE_HEADER).isNotNull())
                         .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                     .otherwise()
-                        .removeHeaders(TARGET_RULE_HEADER, RULES_QUEUE_HEADER)
                         .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
-                        .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
+                        .choice()
+                            .when(simple("${exception}").isNotNull())
+                                .throwException(CannotSendSmsRequestException.class, "${headers." + CamelConstants.SEND_SMS_PATH_HEADER + "}")
+                            .otherwise()
+                                .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
+                        .endChoice()
                     .end()
                 .end();
 
@@ -82,7 +87,8 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                 .doFinally()
                     .removeHeaders(
                             TARGET_RULE_HEADER, TARGET_SMPP_HEADER, TARGET_SMPP_NAME_HEADER,
-                            RULES_QUEUE_HEADER, SmppConstants.DEST_ADDR, CamelConstants.SEND_REQUEST_ID
+                            RULES_QUEUE_HEADER, SmppConstants.DEST_ADDR, CamelConstants.SEND_REQUEST_ID,
+                            CamelConstants.SEND_SMS_PATH_HEADER
                     )
                 .end();
     }
@@ -141,7 +147,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     private void setTargetSmpp(Exchange exchange) {
         Queue<Rule> queue = (Queue<Rule>) exchange.getIn().getHeader(RULES_QUEUE_HEADER);
         if (queue.isEmpty()) {
-            exchange.getIn().setHeader(TARGET_RULE_HEADER, null);
+            exchange.getIn().removeHeader(TARGET_RULE_HEADER);
             return;
         }
         exchange.getIn().setHeader(TARGET_RULE_HEADER, queue.poll());
@@ -165,7 +171,12 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                     .format(SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())
                     .toUpperCase()
             );
-            exchange.getIn().setHeader(TARGET_SMPP_NAME_HEADER,rule.getSpec().getSmpp());
+            exchange.getIn().setHeader(TARGET_SMPP_NAME_HEADER, rule.getSpec().getSmpp());
+            String sequence = exchange.getIn().getHeader(CamelConstants.SEND_SMS_PATH_HEADER, String.class);
+            sequence = sequence == null ? rule.getSpec().getSmpp() : sequence + " -> " + rule.getSpec().getSmpp();
+            exchange.getIn().setHeader(CamelConstants.SEND_SMS_PATH_HEADER, sequence);
+
         }
     }
+
 }
