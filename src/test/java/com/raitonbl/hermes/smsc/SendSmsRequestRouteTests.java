@@ -210,6 +210,37 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
+    void sendSmsRoute_then_assert_exchange_in_case_first_and_second_smpp_throws_exception() throws Exception {
+        String v1Target = "v1";
+        String v1RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v1Target);
+        String v2Target = "v2";
+        String v2RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v2Target);
+        sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
+                Rule.builder().name("v1").description("v1")
+                        .spec(RuleSpec.builder().from(from).smpp(v1Target).build())
+                        .build(),
+                Rule.builder().name("v2").description("v2")
+                        .spec(RuleSpec.builder().from(from).smpp(v2Target).build())
+                        .build(),
+                Rule.builder().name("v3").description("v3")
+                        .spec(RuleSpec.builder().from(from).smpp(smpp).build())
+                        .build()
+        ), new RouteBuilder() {
+            @Override
+            public void configure() {
+                from("direct:" + v1RouteId.toUpperCase())
+                        .routeId(v1RouteId)
+                        .throwException(new NotImplementedException("vmz"))
+                        .end();
+                from("direct:" + v2RouteId.toUpperCase())
+                        .routeId(v2RouteId)
+                        .throwException(new NotImplementedException("xp"))
+                        .end();
+            }
+        });
+    }
+
+    @Test
     void sendSmsRoute_then_assert_exchange_for_destination_doesnt_match_pattern() throws Exception {
         sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString())
                 .from("+25884XXX0000").content("Hi").tags(null), (from, smpp) -> List.of(
