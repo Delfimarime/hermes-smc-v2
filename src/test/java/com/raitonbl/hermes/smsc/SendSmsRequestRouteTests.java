@@ -5,10 +5,7 @@ import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.engine.SmppConnectionRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
-import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
-import com.raitonbl.hermes.smsc.config.rule.Rule;
-import com.raitonbl.hermes.smsc.config.rule.RuleSpec;
-import com.raitonbl.hermes.smsc.config.rule.TagCriteria;
+import com.raitonbl.hermes.smsc.config.rule.*;
 import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelExecutionException;
@@ -198,6 +195,38 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
+    void sendSmsRoute_then_assert_exchange_throw_error_in_case_every_smpp_connection_fails() throws Exception {
+        String v1Target = "v1";
+        String v1RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v1Target);
+        String v2Target = "v2";
+        String v2RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v2Target);
+        String v3Target = "v3";
+        String v3RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v3Target);
+        sendSmsRoute_then_assert_throws_exception(b -> b.id(UUID.randomUUID().toString())
+                .from("+25884XXX0000").content("Hi").tags(null),(from, smpp) -> List.of(
+                createRule("v1", "v1", from, v1Target, null),
+                createRule("v2", "v2", from, v2Target, null),
+                createRule("v3", "v3", from, v3Target, null)
+        ), CannotSendSmsRequestException.class, new RouteBuilder() {
+            @Override
+            public void configure() {
+                from("direct:" + v1RouteId.toUpperCase())
+                        .routeId(v1RouteId)
+                        .throwException(new NotImplementedException("vmz"))
+                        .end();
+                from("direct:" + v2RouteId.toUpperCase())
+                        .routeId(v2RouteId)
+                        .throwException(new NotImplementedException("xp"))
+                        .end();
+                from("direct:" + v3RouteId.toUpperCase())
+                        .routeId(v3RouteId)
+                        .throwException(new NotImplementedException("xp"))
+                        .end();
+            }
+        });
+    }
+
+    @Test
     void sendSmsRoute_then_assert_exchange_for_destination_doesnt_match_pattern() throws Exception {
         sendSmsRoute_then_assert_cannot_determine_target_smpp(b -> b.id(UUID.randomUUID().toString())
                 .from("+25884XXX0000").content("Hi").tags(null), (from, smpp) -> List.of(
@@ -259,6 +288,13 @@ class SendSmsRequestRouteTests {
 
     void sendSmsRoute_then_assert_cannot_determine_target_smpp(Consumer<SendSmsRequest.SendSmsRequestBuilder> c,
                                                                BiFunction<String, String, List<Rule>> getRuleList, RouteBuilder... bs) throws Exception {
+        sendSmsRoute_then_assert_throws_exception(c, getRuleList, CannotDetermineTargetSmppConnectionException.class, bs);
+    }
+
+    <E extends Exception> void sendSmsRoute_then_assert_throws_exception(Consumer<SendSmsRequest.SendSmsRequestBuilder> c,
+                                                                         BiFunction<String, String, List<Rule>> getRuleList,
+                                                                         Class<E> expectedExceptionType,
+                                                                         RouteBuilder... bs) throws Exception {
         String smppId = UUID.randomUUID().toString();
         SendSmsRequest.SendSmsRequestBuilder builder = SendSmsRequest.builder();
         c.accept(builder);
@@ -268,7 +304,7 @@ class SendSmsRequestRouteTests {
                 context.addRoutes(b);
             }
         }
-        Assertions.assertThrows(CannotDetermineTargetSmppConnectionException.class,
+        Assertions.assertThrows(expectedExceptionType,
                 () -> {
                     try {
                         if (getRuleList != null) {
@@ -276,11 +312,12 @@ class SendSmsRequestRouteTests {
                         }
                         template.sendBody(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
                     } catch (CamelExecutionException ex) {
-                        if (ex.getCause() instanceof CannotDetermineTargetSmppConnectionException) {
+                        if (ex.getCause().getClass().isAssignableFrom(expectedExceptionType)) {
                             throw ex.getCause();
                         }
                         throw ex;
                     }
                 });
     }
+
 }
