@@ -24,10 +24,12 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     private static final String RULES_QUEUE_HEADER = CamelConstants.HEADER_PREFIX + "Rules";
     private static final String TARGET_RULE_HEADER = CamelConstants.HEADER_PREFIX + "TargetRule";
     public static final String TARGET_SMPP_HEADER = CamelConstants.HEADER_PREFIX + "TargetSmpp";
+    public static final String TARGET_SMPP_NAME_HEADER = CamelConstants.HEADER_PREFIX + "TargetSmppName";
     private static final String NEXT_RULE_ROUTE_ID = ROUTE_ID + "_GET_RULE";
     private static final String DIRECT_TO_NEXT_RULE_ROUTE_ID = "direct:" + NEXT_RULE_ROUTE_ID;
     private static final String PROCEED_TO_NEXT_ROUTE_ID = ROUTE_ID + "_PROCEED";
     private static final String DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID = "direct:" + PROCEED_TO_NEXT_ROUTE_ID;
+    public static final String RAW_BODY_HEADER = CamelConstants.HEADER_PREFIX + "SendSmsRequest";
 
     @Override
     public void configure() throws Exception {
@@ -38,6 +40,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                     .when(header(TARGET_RULE_HEADER).isNotNull())
                         .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                     .otherwise()
+                        .removeHeaders(TARGET_RULE_HEADER,RULES_QUEUE_HEADER)
                         .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
                         .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
                     .end()
@@ -50,13 +53,18 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                 .choice()
                     .when(header(TARGET_SMPP_HEADER).isNotNull())
                         .doTry()
+                            .setHeader(RAW_BODY_HEADER,simple("${body}"))
                             .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
                             .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
+                            .log(LoggingLevel.DEBUG, "Attempting to send SendSmsRequest[\"id\":\"${headers."+CamelConstants.SEND_REQUEST_ID+"}\"] through Smpp[\"name\":\"${headers."+TARGET_SMPP_NAME_HEADER+"}\"]")
                             .setBody(simple("${body.content}"))
                             .toD("direct:${headers." + TARGET_SMPP_HEADER + "}")
                         .doCatch(Exception.class)
-                            .log(LoggingLevel.ERROR,"${exception.stacktrace}")
-                            // TODO REMOUNT OBJECT
+                            .log(LoggingLevel.ERROR, "${exception.stacktrace}")
+                            .log(LoggingLevel.DEBUG, "Skipping Rule[\"name\":\"${headers."+TARGET_RULE_HEADER+".name}\"] that allows traffic to Smpp[\"name\":\"${headers."+TARGET_SMPP_NAME_HEADER+"}\"] " +
+                                    "because an error occurred")
+                            .setBody(simple("${headers." + RAW_BODY_HEADER + "}"))
+                            .removeHeaders(SmppConstants.DEST_ADDR, CamelConstants.SEND_REQUEST_ID)
                             .to(DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID)
                         .endDoTry()
                         .endChoice()
@@ -67,10 +75,16 @@ public class SendSmsRouteBuilder extends RouteBuilder {
 
         from(DIRECT_TO_ROUTE_ID)
                 .routeId(ROUTE_ID)
-                .enrich(RuleRouteBuilder.DIRECT_TO_READ_RULES_ROUTE_ID, this::setRulesList)
-                .process(this::setTargetSmpp)
-                .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
-                .removeHeader(TARGET_RULE_HEADER).removeHeader(TARGET_SMPP_HEADER).removeHeader(RULES_QUEUE_HEADER);
+                .doTry()
+                    .enrich(RuleRouteBuilder.DIRECT_TO_READ_RULES_ROUTE_ID, this::setRulesList)
+                    .process(this::setTargetSmpp)
+                    .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
+                .doFinally()
+                    .removeHeaders(
+                            TARGET_RULE_HEADER, TARGET_SMPP_HEADER, TARGET_SMPP_NAME_HEADER,
+                            RULES_QUEUE_HEADER, SmppConstants.DEST_ADDR, CamelConstants.SEND_REQUEST_ID
+                    )
+                .end();
     }
 
     private boolean canSendSms(Rule rule, SendSmsRequest request) {
@@ -151,6 +165,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                     .format(SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT, rule.getSpec().getSmpp())
                     .toUpperCase()
             );
+            exchange.getIn().setHeader(TARGET_SMPP_NAME_HEADER,rule.getSpec().getSmpp());
         }
     }
 }
