@@ -42,7 +42,6 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                         .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                     .otherwise()
                         .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
-                .log("<!-- ${exception} --!>")
                         .choice()
                             .when(simple("${exception}").isNotNull())
                                 .throwException(CannotSendSmsRequestException.class, "${headers." + CamelConstants.SEND_SMS_PATH_HEADER + "}")
