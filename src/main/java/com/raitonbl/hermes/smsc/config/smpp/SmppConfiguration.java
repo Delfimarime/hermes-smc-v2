@@ -1,5 +1,6 @@
 package com.raitonbl.hermes.smsc.config.smpp;
 
+import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
 import com.raitonbl.hermes.smsc.sdk.ConfigurationUtils;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -51,6 +52,7 @@ public class SmppConfiguration implements Cloneable {
     private Integer numberOfReadThreads;
     private Boolean singleDeliveryReport;
     private Long initialReconnectDelay;
+    private CircuitBreakerConfig circuitBreakerConfig;
 
     public SmppConfiguration() {
     }
@@ -147,4 +149,5 @@ public class SmppConfiguration implements Cloneable {
     public SmppConfiguration clone() {
         return new SmppConfiguration(this);
     }
+
 }

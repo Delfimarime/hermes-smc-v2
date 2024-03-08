@@ -144,6 +144,11 @@
             <artifactId>camel-snakeyaml</artifactId>
             <version>${camel.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-resilience4j</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
         <!-- Apache Camel -->
         <dependency>
             <groupId>org.ehcache</groupId>
