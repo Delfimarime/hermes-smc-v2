@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.model;
 
 import lombok.Builder;
 import lombok.Getter;
