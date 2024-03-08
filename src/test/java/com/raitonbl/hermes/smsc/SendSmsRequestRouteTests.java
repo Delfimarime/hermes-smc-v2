@@ -2,15 +2,15 @@ package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.camel.engine.CircuitBreakerRouteFactory;
 import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.engine.SmppConnectionRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
+import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
 import com.raitonbl.hermes.smsc.config.rule.*;
 import com.raitonbl.hermes.smsc.sdk.CamelConstants;
-import org.apache.camel.CamelContext;
-import org.apache.camel.CamelExecutionException;
-import org.apache.camel.Exchange;
-import org.apache.camel.ProducerTemplate;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.UUID;
@@ -171,9 +172,9 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRoute_then_assert_exchange_in_case_first_and_second_smpp_throws_exception() throws Exception {
-        String v1Target = "v1";
+        String v1Target = "v5";
         String v1RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v1Target);
-        String v2Target = "v2";
+        String v2Target = "v57";
         String v2RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v2Target);
         sendSmsRoute_then_assert_exchange((from, smpp) -> List.of(
                 createRule("v1", "v1", from, v1Target, null),
@@ -196,11 +197,11 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRoute_then_assert_exchange_throw_error_in_case_every_smpp_connection_fails() throws Exception {
-        String v1Target = "v1";
+        String v1Target = "v65";
         String v1RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v1Target);
-        String v2Target = "v2";
+        String v2Target = "b0";
         String v2RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v2Target);
-        String v3Target = "v3";
+        String v3Target = "s35";
         String v3RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v3Target);
         sendSmsRoute_then_assert_throws_exception(b -> b.id(UUID.randomUUID().toString())
                 .from("+25884XXX0000").content("Hi").tags(null),(from, smpp) -> List.of(
@@ -234,6 +235,48 @@ class SendSmsRequestRouteTests {
         ));
     }
 
+    @Test
+    void sendSmsRoute_then_assert_exchange_when_first_connection_has_circuit_breaker_open_state() throws Exception {
+        String destination = "25884XXX0001";
+        String v1Target = UUID.randomUUID().toString();
+        String v1RouteId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(v1Target);
+        AtomicReference<Integer> counter = new AtomicReference<>(0);
+        sendSmsRoute_then_assert_throws_exception(b -> b.id(UUID.randomUUID().toString())
+                .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(new String[]{"X", "Y", "Z", "ANY"}), (from, smpp) -> List.of(
+                createRule("test", "test", null, v1Target, destination, TagCriteria.builder().allOf(new String[]{"ANY", "Z"}))
+        ),10, CallNotPermittedException.class, new RouteBuilder() {
+            @Override
+            public void configure() {
+                var cfg = CircuitBreakerConfig.builder()
+                        .failureRateThreshold((float) 2)
+                        .automaticTransitionFromOpenToHalfOpenEnabled(true)
+                        .permittedNumberOfCallsInHalfOpenState(1)
+                        .maxWaitDurationInHalfOpenState(1)
+                        .minimumNumberOfCalls(2)
+                        .build();
+
+                CircuitBreakerRouteFactory.setCircuitBreakerRoute(this, cfg, v1RouteId.toUpperCase(), (routeId) -> {
+                    try {
+                        from("direct:" + routeId)
+                                .routeId(v1RouteId)
+                                .process(exchange -> counter.set(counter.get() + 1))
+                                .process(exchange -> exchange.getIn().setHeader("testCounter", counter.get()))
+                                .log(LoggingLevel.INFO, "cb[vmz]=${headers.testCounter}")
+                                .process((ex)->Thread.sleep(200))
+                                .choice()
+                                .when(simple("${headers.testCounter} < 5"))
+                                .throwException(new NotImplementedException("vmz"))
+                                .endChoice()
+                                .end();
+                    }catch (Exception ex){
+                        throw new RuntimeException(ex);
+                    }
+                });
+            }
+        });
+    }
+
+
     private Rule createRule(String name, String description, String from, String smpp, String destination, TagCriteria.TagCriteriaBuilder... s) {
         RuleSpec.RuleSpecBuilder specBuilder = RuleSpec.builder().from(from).smpp(smpp).destinationAddr(destination);
         if (s != null) {
@@ -252,18 +295,22 @@ class SendSmsRequestRouteTests {
                 getRuleList, bs);
     }
 
-    void sendSmsRoute_then_assert_exchange(Consumer<SendSmsRequest.SendSmsRequestBuilder> c,
-                                           BiFunction<String, String, List<Rule>> getRules, RouteBuilder... bs) throws Exception {
+    void sendSmsRoute_then_assert_exchange(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRules, RouteBuilder... bs) throws Exception {
+        sendSmsRoute_then_assert_exchange(c, getRules, 1, bs);
+    }
+
+    void sendSmsRoute_then_assert_exchange(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRules, int retries, RouteBuilder... bs) throws Exception {
         String smppId = UUID.randomUUID().toString();
         String routeId = SmppConnectionRouteBuilder.TRANSMITTER_ROUTE_ID_FORMAT.formatted(smppId);
 
+        AtomicReference<Integer> maxRetries = new AtomicReference<>(retries);
         AtomicReference<Exchange> reference = new AtomicReference<>(null);
         context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() {
                 from("direct:" + routeId.toUpperCase())
                         .routeId(routeId)
-                        .process(reference::set)
+                        .process(ex-> System.out.println("-"))
                         .end();
             }
         });
@@ -277,24 +324,33 @@ class SendSmsRequestRouteTests {
         SendSmsRequest sendSmsRequest = builder.build();
 
         Assertions.assertDoesNotThrow(() -> {
-            TestBeanFactory.setRules(getRules.apply(sendSmsRequest.getFrom(), smppId));
-            template.sendBody(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
+            int attempts = 1;
+            Exception caught;
+            do {
+                TestBeanFactory.setRules(getRules.apply(sendSmsRequest.getFrom(), smppId));
+                reference.set(template.request(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, (exchange -> exchange.getIn().setBody(sendSmsRequest))));
+                caught = reference.get().getException(Exception.class);
+                attempts++;
+            } while (attempts <= maxRetries.get());
+            if (caught != null) {
+                throw caught;
+            }
         });
-
+        Assertions.assertNotNull(reference.get());
         Assertions.assertEquals(sendSmsRequest.getContent(), reference.get().getIn().getBody());
         Assertions.assertEquals(sendSmsRequest.getId(), reference.get().getIn().getHeader(CamelConstants.SEND_REQUEST_ID));
         Assertions.assertEquals(sendSmsRequest.getDestination(), reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
     }
 
-    void sendSmsRoute_then_assert_cannot_determine_target_smpp(Consumer<SendSmsRequest.SendSmsRequestBuilder> c,
-                                                               BiFunction<String, String, List<Rule>> getRuleList, RouteBuilder... bs) throws Exception {
+    void sendSmsRoute_then_assert_cannot_determine_target_smpp(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRuleList, RouteBuilder... bs) throws Exception {
         sendSmsRoute_then_assert_throws_exception(c, getRuleList, CannotDetermineTargetSmppConnectionException.class, bs);
     }
 
-    <E extends Exception> void sendSmsRoute_then_assert_throws_exception(Consumer<SendSmsRequest.SendSmsRequestBuilder> c,
-                                                                         BiFunction<String, String, List<Rule>> getRuleList,
-                                                                         Class<E> expectedExceptionType,
-                                                                         RouteBuilder... bs) throws Exception {
+    <E extends Exception> void sendSmsRoute_then_assert_throws_exception(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRuleList, Class<E> expectedExceptionType, RouteBuilder... bs) throws Exception {
+        sendSmsRoute_then_assert_throws_exception(c, getRuleList, 1, expectedExceptionType, bs);
+    }
+
+    <E extends Exception> void sendSmsRoute_then_assert_throws_exception(Consumer<SendSmsRequest.SendSmsRequestBuilder> c, BiFunction<String, String, List<Rule>> getRuleList,int retries, Class<E> expectedExceptionType, RouteBuilder... bs) throws Exception {
         String smppId = UUID.randomUUID().toString();
         SendSmsRequest.SendSmsRequestBuilder builder = SendSmsRequest.builder();
         c.accept(builder);
@@ -304,19 +360,31 @@ class SendSmsRequestRouteTests {
                 context.addRoutes(b);
             }
         }
+        AtomicReference<Integer> maxRetries = new AtomicReference<>(retries);
         Assertions.assertThrows(expectedExceptionType,
                 () -> {
-                    try {
+                    int attempts = 1;
+                    Throwable caught;
+                    do {
                         if (getRuleList != null) {
                             TestBeanFactory.setRules(getRuleList.apply(sendSmsRequest.getFrom(), smppId));
                         }
-                        template.sendBody(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID, sendSmsRequest);
-                    } catch (CamelExecutionException ex) {
-                        if (ex.getCause().getClass().isAssignableFrom(expectedExceptionType)) {
-                            throw ex.getCause();
+                        Exchange outExchange = template
+                                .request(SendSmsRouteBuilder.DIRECT_TO_ROUTE_ID,
+                                        (exchange -> exchange.getIn().setBody(sendSmsRequest)));
+                        caught = outExchange.getException(Exception.class);
+                        if (caught == null) {
+                            Assertions.fail("expected exception but got None");
                         }
-                        throw ex;
-                    }
+                        if (caught instanceof CamelExecutionException) {
+                            caught = caught.getCause();
+                        }
+                        if (caught.getClass().isAssignableFrom(expectedExceptionType)) {
+                           break;
+                        }
+                        attempts++;
+                    } while (attempts <= maxRetries.get());
+                    throw caught;
                 });
     }
 

@@ -1,6 +1,6 @@
 package com.raitonbl.hermes.smsc.config.health;
 
-import io.github.resilience4j.core.IntervalFunction;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
+@Builder
 public class CircuitBreakerConfig {
     private TimeUnit timestampUnit;
     private Float failureRateThreshold;
