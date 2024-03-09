@@ -15,14 +15,23 @@ public class PolicyDefinition {
     private String id;
     @JsonProperty("version")
     private String version;
-    @JsonProperty("from")
-    private String from;
-    @JsonProperty("destination")
-    private String destination;
-    @JsonProperty("resource")
-    private List<ResourceDefinition> resources;
-    @JsonProperty("tags")
-    private Map<String, String> tags;
+    @JsonProperty("spec")
+    private Spec spec;
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Spec {
+        @JsonProperty("from")
+        private String from;
+        @JsonProperty("destination")
+        private String destination;
+        @JsonProperty("resource")
+        private List<ResourceDefinition> resources;
+        @JsonProperty("tags")
+        private Map<String, String> tags;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor
