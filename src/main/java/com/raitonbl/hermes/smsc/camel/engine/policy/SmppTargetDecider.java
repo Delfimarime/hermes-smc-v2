@@ -26,7 +26,6 @@ public final class SmppTargetDecider extends RouteBuilder {
     public static final String ROUTE_ID = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "_GET_TARGET_FROM_POLICIES";
     public static final String DIRECT_TO = "direct:" + ROUTE_ID;
     public static final String CACHE_LISTENER_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_CACHE_LISTENER";
-
     private List<Policy> cache = new ArrayList<>();
 
     @Override
@@ -65,16 +64,16 @@ public final class SmppTargetDecider extends RouteBuilder {
                 return;
             }
             this.cache = policies.stream().map(policy -> Policy.builder().id(policy.getId())
-                            .target(getTargetFrom(policy, connections))
-                            .predicate(createPredicateFrom(policy))
-                            .build()).toList();
+                    .target(getTargetFrom(policy, connections))
+                    .predicate(createPredicateFrom(policy)).build()).toList();
         }
     }
 
     /**
      * Retrieves a list of SmppTarget objects based on the given Policy and SmppConnection list.
-     * @param definition the Policy
-     * @param smppConnections         the list of SmppConnectionDefinition
+     *
+     * @param definition      the Policy
+     * @param smppConnections the list of SmppConnectionDefinition
      * @return the list of SmppTarget objects
      */
     private List<SmppTarget> getTargetFrom(PolicyDefinition definition, List<SmppConnectionDefinition> smppConnections) {
@@ -116,6 +115,7 @@ public final class SmppTargetDecider extends RouteBuilder {
 
     /**
      * Creates a Predicate<SendSmsRequest> based on the given Policy.
+     *
      * @param definition the PolicyDefinition to create the predicate from
      * @return a Predicate<SendSmsRequest> object
      */
@@ -148,54 +148,54 @@ public final class SmppTargetDecider extends RouteBuilder {
         };
     }
 
-    @SuppressWarnings({"unchecked"})
     private void process(Exchange exchange) {
         SendSmsRequest sendSmsRequest = exchange.getIn().getBody(SendSmsRequest.class);
-        Iterator<SmppTarget> iterator = exchange.getIn().getHeader("Y", Iterator.class);
+        PolicyChainIterator iterator = exchange.getIn().getHeader("Y", PolicyChainIterator.class);
         if (iterator == null) {
-            iterator = this.cache.stream().filter(e -> e.isPermitted(sendSmsRequest)).iterator();
+            iterator = new PolicyChainIterator(this.cache.stream().filter(e -> e.isPermitted(sendSmsRequest)).iterator());
         }
         if (!iterator.hasNext()) {
             exchange.getIn().removeHeader(HermesConstants.POLICY);
-            exchange.getIn().removeHeader(HermesConstants.POLICIES);
             exchange.getIn().removeHeader(HermesConstants.SMPP_CONNECTION);
-            return;
-        }
-        SmppTarget target = iterator.next();
-        exchange.getIn().setHeader(HermesConstants.POLICIES, iterator);
-        exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION, target);
-        exchange.getIn().setHeader(HermesConstants.POLICY, target.getPolicy());
-    }
-
-}
-
-class PolicyChainIterator implements Iterator<SmppTarget> {
-    private Iterator<SmppTarget> target;
-    private final Iterator<Policy> policies;
-    private final List<String> visited = new ArrayList<>();
-
-    public PolicyChainIterator(Iterator<Policy> policies) {
-        this.policies = policies;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return this.policies.hasNext() || this.target.hasNext();
-    }
-
-    public SmppTarget next() {
-        if (!this.target.hasNext() && this.policies.hasNext()) {
-            this.target = this.policies.next().getTarget().iterator();
-            return next();
-        } else if (this.target.hasNext()) {
-            SmppTarget targetObject = target.next();
-            if (visited.contains(targetObject.getId())) {
-                return next();
-            }
-            visited.add(targetObject.getId());
-            return targetObject;
-        } else {
+            exchange.getIn().removeHeader(HermesConstants.SMPP_CONNECTION_ITERATOR);
             throw new NoSuchElementException();
         }
+        SmppTarget target = iterator.next();
+        exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION, target);
+        exchange.getIn().setHeader(HermesConstants.POLICY, target.getPolicy());
+        exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION_ITERATOR, iterator);
     }
+
+    static class PolicyChainIterator implements Iterator<SmppTarget> {
+        private Iterator<SmppTarget> target;
+        private final Iterator<Policy> policies;
+        private final List<String> visited = new ArrayList<>();
+
+        public PolicyChainIterator(Iterator<Policy> policies) {
+            this.policies = policies;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return this.policies.hasNext() || this.target.hasNext();
+        }
+
+        public SmppTarget next() {
+            if (!this.target.hasNext() && this.policies.hasNext()) {
+                this.target = this.policies.next().getTarget().iterator();
+                return next();
+            } else if (this.target.hasNext()) {
+                SmppTarget targetObject = target.next();
+                if (visited.contains(targetObject.getId())) {
+                    return next();
+                }
+                visited.add(targetObject.getId());
+                return targetObject;
+            } else {
+                throw new NoSuchElementException();
+            }
+        }
+    }
+
 }
+
