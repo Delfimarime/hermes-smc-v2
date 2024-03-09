@@ -74,19 +74,19 @@ public final class SmppConnectionDecider extends RouteBuilder {
      * @param smppConnections the list of SmppConnectionDefinition
      * @return the list of SmppTarget objects
      */
-    private List<SmppConnectionDetails> getTargetFrom(PolicyDefinition definition, List<SmppConnectionDefinition> smppConnections) {
-        final List<SmppConnectionDetails> collection = new ArrayList<>();
-        final Map<String, SmppConnectionDetails> uniquenessCache = new HashMap<>();
+    private List<SmppConnectionInformation> getTargetFrom(PolicyDefinition definition, List<SmppConnectionDefinition> smppConnections) {
+        final List<SmppConnectionInformation> collection = new ArrayList<>();
+        final Map<String, SmppConnectionInformation> uniquenessCache = new HashMap<>();
         for (PolicyDefinition.ResourceDefinition targetGroup : definition.getSpec().getResources()) {
-            Function<SmppConnectionDefinition, SmppConnectionDetails> factory = e ->
-                    SmppConnectionDetails.builder().id(e.getId()).alias(e.getAlias()).name(e.getName()).policy(definition).build();
+            Function<SmppConnectionDefinition, SmppConnectionInformation> factory = e ->
+                    SmppConnectionInformation.builder().id(e.getId()).alias(e.getAlias()).name(e.getName()).policy(definition).build();
 
             if (StringUtils.equals("*", targetGroup.getId())) {
                 return smppConnections.stream().map(factory).collect(Collectors.toList());
             }
 
             if (targetGroup.getId() != null && !uniquenessCache.containsKey(targetGroup.getId())) {
-                SmppConnectionDetails target = uniquenessCache.computeIfAbsent(targetGroup.getId(), key ->
+                SmppConnectionInformation target = uniquenessCache.computeIfAbsent(targetGroup.getId(), key ->
                         smppConnections.stream().filter(e -> StringUtils.equals(e.getId(), targetGroup.getId())).map(factory)
                                 .findFirst().orElse(null));
                 if (target != null) {
@@ -101,7 +101,7 @@ public final class SmppConnectionDecider extends RouteBuilder {
                         .allMatch(entry -> StringUtils.equals(entry.getValue(),
                                 smppConnectionDefinition.getTags().get(entry.getKey())));
                 if (isSuitable) {
-                    SmppConnectionDetails target = factory.apply(smppConnectionDefinition);
+                    SmppConnectionInformation target = factory.apply(smppConnectionDefinition);
                     collection.add(target);
                     uniquenessCache.put(target.getId(), target);
                 }
@@ -158,14 +158,14 @@ public final class SmppConnectionDecider extends RouteBuilder {
             exchange.getIn().removeHeader(HermesConstants.SMPP_CONNECTION_ITERATOR);
             throw new NoSuchElementException();
         }
-        SmppConnectionDetails target = iterator.next();
+        SmppConnectionInformation target = iterator.next();
         exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION, target);
         exchange.getIn().setHeader(HermesConstants.POLICY, target.getPolicy());
         exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION_ITERATOR, iterator);
     }
 
-    static class PolicyChainIterator implements Iterator<SmppConnectionDetails> {
-        private Iterator<SmppConnectionDetails> target;
+    static class PolicyChainIterator implements Iterator<SmppConnectionInformation> {
+        private Iterator<SmppConnectionInformation> target;
         private final Iterator<Policy> policies;
         private final List<String> visited = new ArrayList<>();
 
@@ -178,12 +178,12 @@ public final class SmppConnectionDecider extends RouteBuilder {
             return this.policies.hasNext() || this.target.hasNext();
         }
 
-        public SmppConnectionDetails next() {
+        public SmppConnectionInformation next() {
             if (!this.target.hasNext() && this.policies.hasNext()) {
                 this.target = this.policies.next().getTarget().iterator();
                 return next();
             } else if (this.target.hasNext()) {
-                SmppConnectionDetails targetObject = target.next();
+                SmppConnectionInformation targetObject = target.next();
                 if (visited.contains(targetObject.getId())) {
                     return next();
                 }

@@ -11,7 +11,7 @@ import java.util.function.Predicate;
 @Builder
 public class Policy {
     private String id;
-    private List<SmppConnectionDetails> target;
+    private List<SmppConnectionInformation> target;
     private Predicate<SendSmsRequest> predicate;
     public boolean isPermitted(SendSmsRequest request) {
         return this.predicate == null ? Boolean.FALSE : this.predicate.test(request);
