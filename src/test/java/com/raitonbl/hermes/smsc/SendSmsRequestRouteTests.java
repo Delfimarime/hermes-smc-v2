@@ -8,7 +8,7 @@ import com.raitonbl.hermes.smsc.camel.engine.SmppConnectionRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
 import com.raitonbl.hermes.smsc.config.rule.*;
-import com.raitonbl.hermes.smsc.sdk.CamelConstants;
+import com.raitonbl.hermes.smsc.sdk.HermesConstants;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.UUID;
@@ -338,7 +337,7 @@ class SendSmsRequestRouteTests {
         });
         Assertions.assertNotNull(reference.get());
         Assertions.assertEquals(sendSmsRequest.getContent(), reference.get().getIn().getBody());
-        Assertions.assertEquals(sendSmsRequest.getId(), reference.get().getIn().getHeader(CamelConstants.SEND_REQUEST_ID));
+        Assertions.assertEquals(sendSmsRequest.getId(), reference.get().getIn().getHeader(HermesConstants.SEND_REQUEST_ID));
         Assertions.assertEquals(sendSmsRequest.getDestination(), reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
     }
 

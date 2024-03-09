@@ -2,9 +2,9 @@ package com.raitonbl.hermes.smsc.camel;
 
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
-import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.SendSmsListenerConfiguration;
+import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SendSmsAsyncRouteBuilder extends RouteBuilder {
-    public static final String ROUTE_ID = CamelConstants.ROUTE_PREFIX +"_SEND_MESSAGE_ASYNCHRONOUSLY";
+    public static final String ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX +"_SEND_MESSAGE_ASYNCHRONOUSLY";
     private SendSmsListenerConfiguration configuration;
 
     @Override

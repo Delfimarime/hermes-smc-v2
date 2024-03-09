@@ -3,6 +3,9 @@ spring:
     allow-bean-definition-overriding: true
   application:
     name: ${HERMES_SERVER_NAME:hermes-smsc-svc}
+  threads:
+    virtual:
+      enabled: true
   boot:
     admin:
       client:

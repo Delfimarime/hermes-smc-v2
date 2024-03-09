@@ -2,9 +2,9 @@ package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.RuleConfiguration;
-import com.raitonbl.hermes.smsc.config.rule.Rule;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
@@ -31,19 +31,20 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Component
-public class RuleRouteBuilder extends RouteBuilder {
+public class PolicyRouteBuilder extends RouteBuilder {
     public static final String CACHE_NAME = "kv_rule";
-    private static final String RULE_CACHE_KEY = "default";
-    public static final String READ_RULES_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_READ_RULES";
-    public static final String DIRECT_TO_READ_RULES_ROUTE_ID = "direct:" + READ_RULES_ROUTE_ID;
-    public static final String UPDATE_RULES_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_PUT_RULES";
-    public static final String DIRECT_TO_UPDATE_RULES_ROUTE_ID = "direct:" + UPDATE_RULES_ROUTE_ID;
+    public static final String POLICY_CACHE_KEY = "default";
+    public static final String READ_FROM_DATASOURCE_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_READ";
+    public static final String DIRECT_TO_READ_FROM_DATASOURCE_ROUTE = "direct:" + READ_FROM_DATASOURCE_ROUTE_ID;
+    public static final String UPDATE_DATASOURCE_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_UPDATE";
+    public static final String DIRECT_TO_UPDATE_DATASOURCE_ROUTE = "direct:" + UPDATE_DATASOURCE_ROUTE_ID;
+    public static final String CACHE_LISTENER_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_CACHE_LISTENER";
     private ObjectMapper objectMapper;
     private RuleConfiguration configuration;
 
     @Override
     public void configure() {
-        if (configuration == null) {
+        if (this.configuration == null) {
             return;
         }
         JCachePolicy jCachePolicy = new JCachePolicy();
@@ -65,54 +66,51 @@ public class RuleRouteBuilder extends RouteBuilder {
         }
     }
 
-    private void setUpdateRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
-        from(DIRECT_TO_UPDATE_RULES_ROUTE_ID)
-                .routeId(DIRECT_TO_UPDATE_RULES_ROUTE_ID)
-                .setHeader(JCacheConstants.KEY, simple(RULE_CACHE_KEY))
-                .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
-                .policy(jCachePolicy)
-                .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
-                .process(this.addHeader(opts.getWriteHeaders()))
-                .to(configuration.toPersistCamelURI())
-                .end();
-    }
-
     private void setReadRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
-        ProcessorDefinition<?> definition = from(DIRECT_TO_READ_RULES_ROUTE_ID)
-                .routeId(READ_RULES_ROUTE_ID)
+        ProcessorDefinition<?> routeDefinition = from(DIRECT_TO_READ_FROM_DATASOURCE_ROUTE)
+                .routeId(READ_FROM_DATASOURCE_ROUTE_ID)
                 .setBody(simple(null))
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
-                .setHeader(JCacheConstants.KEY, simple(RULE_CACHE_KEY))
+                .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
                 .policy(jCachePolicy)
                 .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
                 .choice()
-                .when(body().isNotNull())
-                    .log(LoggingLevel.DEBUG, "Retrieving rules from jcache[key=${headers." +
+                    .when(body().isNotNull())
+                        .log(LoggingLevel.DEBUG, "Retrieving Policy from jcache[key=${headers." +
                             JCacheConstants.KEY + "}]")
-                .otherwise()
-                    .log(LoggingLevel.DEBUG, "Reading rules from datasource[type=" +
-                            this.configuration.getType() + "]")
-                    .process(this.addHeader(opts.getReadHeaders()));
-
+                    .otherwise()
+                        .log(LoggingLevel.DEBUG, "Reading Policy from datasource[type=" +
+                                this.configuration.getType() + "]")
+                        .process(this.addHeader(opts.getReadHeaders()));
         if (opts.getCatchableReadException() != null) {
-            definition = definition
-                    .doTry()
-                        .to(this.configuration.toCamelURI())
-                    .doCatch(NoSuchKeyException.class)
-                        .log(opts.getOnCatchReadExceptionLog())
-                    .end();
-        } else {
-            definition = definition
+            routeDefinition.doTry()
                     .to(this.configuration.toCamelURI())
-                    .end();
+                    .doCatch(opts.getCatchableReadException())
+                    .log(opts.getOnCatchReadExceptionLog())
+                    .endDoTry();
+        } else {
+            routeDefinition.to(this.configuration.toCamelURI()).end();
         }
-        
-        definition.process(this.removeHeader(opts.getReadHeaders()))
+        routeDefinition.process(this.removeHeader(opts.getReadHeaders()))
                 .process(this::unmarshall)
                 .setHeader(JCacheConstants.ACTION, simple("PUT"))
-                .setHeader(JCacheConstants.KEY, simple(RULE_CACHE_KEY))
+                .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
                 .toD("jcache://" + CACHE_NAME)
                 .endChoice()
+                .end();
+    }
+
+    private void setUpdateRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
+        from(DIRECT_TO_UPDATE_DATASOURCE_ROUTE)
+                .routeId(DIRECT_TO_UPDATE_DATASOURCE_ROUTE)
+                // Update datasource
+                .process(this.addHeader(opts.getWriteHeaders()))
+                .to(configuration.toPersistCamelURI())
+                // Purge cache
+                .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
+                .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
+                .policy(jCachePolicy)
+                .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
                 .end();
     }
 
@@ -128,7 +126,7 @@ public class RuleRouteBuilder extends RouteBuilder {
         String value = Optional.ofNullable(
                 exchange.getIn().getBody(String.class)
         ).orElse("[]");
-        List<Rule> collection = this.objectMapper.readValue(value, new TypeReference<>() {
+        List<PolicyDefinition> collection = this.objectMapper.readValue(value, new TypeReference<>() {
         });
         exchange.getIn().setBody(collection);
     }

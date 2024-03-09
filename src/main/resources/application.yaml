@@ -1,4 +1,7 @@
 spring:
+  threads:
+    virtual:
+      enabled: true
   application:
     name: ${HERMES_SERVER_NAME:hermes-smsc-svc}
   boot:

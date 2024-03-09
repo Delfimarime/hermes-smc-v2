@@ -1,10 +1,9 @@
 package com.raitonbl.hermes.smsc.camel;
 
-import com.raitonbl.hermes.smsc.camel.model.Problem;
 import com.raitonbl.hermes.smsc.camel.engine.RuleRouteBuilder;
-import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.RuleConfiguration;
+import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -19,7 +18,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 
 @Component
 public class PutRuleHttpRouteBuilder extends RouteBuilder {
-    public static final String PUT_RULES_ENDPOINT_ROUTE_ID = CamelConstants.ROUTE_PREFIX +"_HTTP_PUT_RULES";
+    public static final String PUT_RULES_ENDPOINT_ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX +"_HTTP_PUT_RULES";
     private static final String ENDPOINT_OPERATION_ID = "setRules";
     private RuleConfiguration configuration;
 
@@ -54,12 +53,12 @@ public class PutRuleHttpRouteBuilder extends RouteBuilder {
                     .log("${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNPROCESSABLE_ENTITY.value()))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(Problem.unprocessableEntity(ENDPOINT_OPERATION_ID))
+                    .setBody(HttpProblem.unprocessableEntity(ENDPOINT_OPERATION_ID))
                 .doCatch(Exception.class)
                     .log("${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(Problem.get())
+                    .setBody(HttpProblem.get())
                 .doFinally()
                     .marshal().json(JsonLibrary.Jackson)
                 .end();

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @Builder
@@ -13,10 +15,10 @@ public class SendSmsRequest {
     private String id;
     @JsonProperty("from")
     private String from;
-    @JsonProperty("tags")
-    private String[] tags;
     @JsonProperty("content")
     private String content;
     @JsonProperty("to")
     private String destination;
+    @JsonProperty("tags")
+    private Map<String, String> tags;
 }

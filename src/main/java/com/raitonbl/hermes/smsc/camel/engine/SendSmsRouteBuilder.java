@@ -2,10 +2,11 @@ package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.config.rule.CannotSendSmsRequestException;
-import com.raitonbl.hermes.smsc.sdk.CamelConstants;
+import com.raitonbl.hermes.smsc.sdk.HermesConstants;
 import com.raitonbl.hermes.smsc.config.rule.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
 import com.raitonbl.hermes.smsc.config.rule.TagCriteria;
+import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
@@ -20,17 +21,17 @@ import java.util.stream.Stream;
 
 @Component
 public class SendSmsRouteBuilder extends RouteBuilder {
-    private static final String ROUTE_ID = CamelConstants.SYSTEM_ROUTE_PREFIX + "SEND_MESSAGE";
+    private static final String ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "SEND_MESSAGE";
     public static final String DIRECT_TO_ROUTE_ID = "direct:" + ROUTE_ID;
-    private static final String RULES_QUEUE_HEADER = CamelConstants.HEADER_PREFIX + "Rules";
-    private static final String TARGET_RULE_HEADER = CamelConstants.HEADER_PREFIX + "TargetRule";
-    public static final String TARGET_SMPP_HEADER = CamelConstants.HEADER_PREFIX + "TargetSmpp";
-    public static final String TARGET_SMPP_NAME_HEADER = CamelConstants.HEADER_PREFIX + "TargetSmppName";
+    private static final String RULES_QUEUE_HEADER = HermesConstants.HEADER_PREFIX + "Rules";
+    private static final String TARGET_RULE_HEADER = HermesConstants.HEADER_PREFIX + "TargetRule";
+    public static final String TARGET_SMPP_HEADER = HermesConstants.HEADER_PREFIX + "TargetSmpp";
+    public static final String TARGET_SMPP_NAME_HEADER = HermesConstants.HEADER_PREFIX + "TargetSmppName";
     private static final String NEXT_RULE_ROUTE_ID = ROUTE_ID + "_GET_RULE";
     private static final String DIRECT_TO_NEXT_RULE_ROUTE_ID = "direct:" + NEXT_RULE_ROUTE_ID;
     private static final String PROCEED_TO_NEXT_ROUTE_ID = ROUTE_ID + "_PROCEED";
     private static final String DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID = "direct:" + PROCEED_TO_NEXT_ROUTE_ID;
-    public static final String RAW_BODY_HEADER = CamelConstants.HEADER_PREFIX + "SendSmsRequest";
+    public static final String RAW_BODY_HEADER = HermesConstants.HEADER_PREFIX + "SendSmsRequest";
 
     @Override
     public void configure() throws Exception {
@@ -44,7 +45,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.DEBUG, "No more rule(s) that apply to SendSmsRequest[\"id\":\"${body.id}\"]")
                         .choice()
                             .when(simple("${exception}").isNotNull())
-                                .throwException(CannotSendSmsRequestException.class, "${headers." + CamelConstants.SEND_SMS_PATH_HEADER + "}")
+                                .throwException(CannotSendSmsRequestException.class, "${headers." + HermesConstants.SEND_SMS_PATH + "}")
                             .otherwise()
                                 .throwException(CannotDetermineTargetSmppConnectionException.class, "SendSmsRequest[\"id\":\"${body.id}\"]")
                         .endChoice()
@@ -60,8 +61,8 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                         .doTry()
                             .setHeader(RAW_BODY_HEADER,simple("${body}"))
                             .setHeader(SmppConstants.DEST_ADDR, simple("${body.destination}"))
-                            .setHeader(CamelConstants.SEND_REQUEST_ID, simple("${body.id}"))
-                            .log(LoggingLevel.DEBUG, "Attempting to send SendSmsRequest[\"id\":\"${headers."+CamelConstants.SEND_REQUEST_ID+"}\"] through Smpp[\"name\":\"${headers."+TARGET_SMPP_NAME_HEADER+"}\"]")
+                            .setHeader(HermesConstants.SEND_REQUEST_ID, simple("${body.id}"))
+                            .log(LoggingLevel.DEBUG, "Attempting to send SendSmsRequest[\"id\":\"${headers."+ HermesConstants.SEND_REQUEST_ID+"}\"] through Smpp[\"name\":\"${headers."+TARGET_SMPP_NAME_HEADER+"}\"]")
                             .setBody(simple("${body.content}"))
                             .toD("direct:${headers." + TARGET_SMPP_HEADER + "}")
                         .doCatch(Exception.class)
@@ -69,7 +70,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                                     "because an error occurred")
                             .log(LoggingLevel.ERROR, "${exception.stacktrace}")
                             .setBody(simple("${headers." + RAW_BODY_HEADER + "}"))
-                            .removeHeaders(SmppConstants.DEST_ADDR, CamelConstants.SEND_REQUEST_ID)
+                            .removeHeaders(SmppConstants.DEST_ADDR, HermesConstants.SEND_REQUEST_ID)
                             .to(DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID)
                         .endDoTry()
                         .endChoice()
@@ -87,8 +88,8 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                 .doFinally()
                     .removeHeaders(
                             TARGET_RULE_HEADER, TARGET_SMPP_HEADER, TARGET_SMPP_NAME_HEADER,
-                            RULES_QUEUE_HEADER, SmppConstants.DEST_ADDR, CamelConstants.SEND_REQUEST_ID,
-                            CamelConstants.SEND_SMS_PATH_HEADER
+                            RULES_QUEUE_HEADER, SmppConstants.DEST_ADDR, HermesConstants.SEND_REQUEST_ID,
+                            HermesConstants.SEND_SMS_PATH
                     )
                 .end();
     }
@@ -172,9 +173,9 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                     .toUpperCase()
             );
             exchange.getIn().setHeader(TARGET_SMPP_NAME_HEADER, rule.getSpec().getSmpp());
-            String sequence = exchange.getIn().getHeader(CamelConstants.SEND_SMS_PATH_HEADER, String.class);
+            String sequence = exchange.getIn().getHeader(HermesConstants.SEND_SMS_PATH, String.class);
             sequence = sequence == null ? rule.getSpec().getSmpp() : sequence + " -> " + rule.getSpec().getSmpp();
-            exchange.getIn().setHeader(CamelConstants.SEND_SMS_PATH_HEADER, sequence);
+            exchange.getIn().setHeader(HermesConstants.SEND_SMS_PATH, sequence);
 
         }
     }

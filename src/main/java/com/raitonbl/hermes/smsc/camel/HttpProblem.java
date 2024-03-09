@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.model;
+package com.raitonbl.hermes.smsc.camel;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -9,14 +9,14 @@ import org.springframework.http.HttpStatus;
 @Getter
 @Setter
 @Builder
-public class Problem {
+public class HttpProblem {
     private String type;
     private String title;
     private int status;
     private String detail;
 
     public static ValueBuilder get() {
-        return org.apache.camel.builder.Builder.constant(Problem.builder()
+        return org.apache.camel.builder.Builder.constant(HttpProblem.builder()
                 .detail("An error occurred during your request :(, " +
                         "retry and if it persist contact the administrators")
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -24,14 +24,14 @@ public class Problem {
     }
 
     public static ValueBuilder unprocessableEntity(String operationId) {
-        return org.apache.camel.builder.Builder.constant(Problem.builder()
+        return org.apache.camel.builder.Builder.constant(HttpProblem.builder()
                 .detail("Request doesn't match the specification")
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value()).title("Unprocessable entity")
                 .type("/problems/" + operationId + "/unprocessable-entity").build());
     }
 
     public static ValueBuilder unsupportedMediaType(String operationId) {
-        return org.apache.camel.builder.Builder.constant(Problem.builder()
+        return org.apache.camel.builder.Builder.constant(HttpProblem.builder()
                 .detail("Request doesn't match the specification")
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()).title("Unsupported Media Type")
                 .type("/problems/" + operationId + "/unsupported-media-type").build());

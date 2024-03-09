@@ -1,10 +1,9 @@
 package com.raitonbl.hermes.smsc.camel;
 
-import com.raitonbl.hermes.smsc.camel.model.Problem;
 import com.raitonbl.hermes.smsc.camel.engine.RuleRouteBuilder;
-import com.raitonbl.hermes.smsc.sdk.CamelConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.RuleConfiguration;
+import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -19,7 +18,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 
 @Component
 public class GetRuleHttpRouteBuilder extends RouteBuilder {
-    public static final String GET_RULES_ENDPOINT_ROUTE_ID = CamelConstants.ROUTE_PREFIX + "_HTTP_GET_RULES";
+    public static final String GET_RULES_ENDPOINT_ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX + "_HTTP_GET_RULES";
     private static final String ENDPOINT_OPERATION_ID = "getRules";
     private RuleConfiguration configuration;
 
@@ -45,12 +44,12 @@ public class GetRuleHttpRouteBuilder extends RouteBuilder {
                     .log("Exception caught ${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(Problem.unsupportedMediaType(ENDPOINT_OPERATION_ID))
+                    .setBody(HttpProblem.unsupportedMediaType(ENDPOINT_OPERATION_ID))
                 .doCatch(Exception.class)
                     .log("Exception caught ${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.INTERNAL_SERVER_ERROR.value()))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(Problem.get())
+                    .setBody(HttpProblem.get())
                 .doFinally()
                     .choice()
                         .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.APPLICATION_JSON_VALUE))
@@ -60,7 +59,7 @@ public class GetRuleHttpRouteBuilder extends RouteBuilder {
                             .marshal().yaml(YAMLLibrary.SnakeYAML)
                         .endChoice()
                         .otherwise()
-                            .setBody(Problem.unsupportedMediaType(ENDPOINT_OPERATION_ID))
+                            .setBody(HttpProblem.unsupportedMediaType(ENDPOINT_OPERATION_ID))
                             .marshal().json(JsonLibrary.Jackson)
                             .setHeader(Exchange.CONTENT_TYPE,constant(MediaType.APPLICATION_JSON_VALUE))
                     .end()

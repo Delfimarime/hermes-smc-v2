@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.camel.component.smpp.SmppSplittingPolicy;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
