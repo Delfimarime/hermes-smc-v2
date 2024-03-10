@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -22,4 +23,11 @@ public class HermesConfiguration {
     @NotEmpty
     private Map<String, SmppConfiguration> services;
     private RuleConfiguration rulesDatasource;
+    private Optional<String> homeDirectory;
+
+    public String getHomeDirectory(){
+        return homeDirectory
+                .or(()->Optional.ofNullable(System.getenv("HERMES_SMSC_HOME"))).orElse("./");
+    }
+
 }

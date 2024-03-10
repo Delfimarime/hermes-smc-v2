@@ -2,6 +2,8 @@ package com.raitonbl.hermes.smsc.config;
 
 import com.ctc.wstx.shaded.msv_core.util.Uri;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
+import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.camel.spring.boot.util.ConditionalOnHierarchicalProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,14 +20,36 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.SqsClientBuilder;
 
+import javax.cache.Cache;
+import javax.cache.CacheManager;
+import javax.cache.Caching;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
 import java.net.URI;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class BeanFactory {
     public static final String AWS_S3_CLIENT ="amazonS3Client";
     public static final String AWS_SQS_CLIENT ="amazonSQSClient";
     public static final String RULES_REDIS_CONNECTION_FACTORY ="rulesRedisConnectionFactory";
+
+    @Bean(HermesSystemConstants.KV_CACHE_NAME)
+    public JCachePolicy kvJCachePolicy() {
+        JCachePolicy jCachePolicy = new JCachePolicy();
+        MutableConfiguration<String, Object> configuration = new MutableConfiguration<>();
+        configuration.setTypes(String.class, Object.class);
+        configuration
+                .setExpiryPolicyFactory(CreatedExpiryPolicy
+                        .factoryOf(new Duration(TimeUnit.MINUTES, 3)));
+        CacheManager cacheManager = Caching.getCachingProvider().getCacheManager();
+        Cache<String, Object> cache = cacheManager.createCache(HermesSystemConstants.KV_CACHE_NAME, configuration);
+        jCachePolicy.setCache(cache);
+        jCachePolicy.setCacheManager(cacheManager);
+        return jCachePolicy;
+    }
 
     @Bean(AWS_SQS_CLIENT)
     @ConditionalOnMissingBean

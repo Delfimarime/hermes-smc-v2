@@ -1,7 +1,6 @@
-package com.raitonbl.hermes.smsc.camel.engine.smpp;
+package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.engine.PolicyRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.sdk.HermesConstants;
@@ -19,17 +18,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
-public final class SmppConnectionDecider extends RouteBuilder {
+public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
     private static final Object LOCK = new Object();
-    public static final String ROUTE_ID = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "_GET_TARGET_FROM_POLICIES";
-    public static final String DIRECT_TO = "direct:" + ROUTE_ID;
     public static final String CACHE_LISTENER_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_CACHE_LISTENER";
     private List<Policy> cache = new ArrayList<>();
 
     @Override
     public void configure() throws Exception {
-        from(DIRECT_TO)
-                .routeId(ROUTE_ID)
+        from(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_ROUTE)
+                .routeId(HermesSystemConstants.SMPP_DECIDER_ROUTE)
                 .process(this::process)
                 .end();
 
@@ -74,19 +71,19 @@ public final class SmppConnectionDecider extends RouteBuilder {
      * @param smppConnections the list of SmppConnectionDefinition
      * @return the list of SmppTarget objects
      */
-    private List<SmppConnectionInformation> getTargetFrom(PolicyDefinition definition, List<SmppConnectionDefinition> smppConnections) {
-        final List<SmppConnectionInformation> collection = new ArrayList<>();
-        final Map<String, SmppConnectionInformation> uniquenessCache = new HashMap<>();
+    private List<SmppConnectionObject> getTargetFrom(PolicyDefinition definition, List<SmppConnectionDefinition> smppConnections) {
+        final List<SmppConnectionObject> collection = new ArrayList<>();
+        final Map<String, SmppConnectionObject> uniquenessCache = new HashMap<>();
         for (PolicyDefinition.ResourceDefinition targetGroup : definition.getSpec().getResources()) {
-            Function<SmppConnectionDefinition, SmppConnectionInformation> factory = e ->
-                    SmppConnectionInformation.builder().id(e.getId()).alias(e.getAlias()).name(e.getName()).policy(definition).build();
+            Function<SmppConnectionDefinition, SmppConnectionObject> factory = e ->
+                    SmppConnectionObject.builder().id(e.getId()).alias(e.getAlias()).name(e.getName()).policy(definition).build();
 
             if (StringUtils.equals("*", targetGroup.getId())) {
                 return smppConnections.stream().map(factory).collect(Collectors.toList());
             }
 
             if (targetGroup.getId() != null && !uniquenessCache.containsKey(targetGroup.getId())) {
-                SmppConnectionInformation target = uniquenessCache.computeIfAbsent(targetGroup.getId(), key ->
+                SmppConnectionObject target = uniquenessCache.computeIfAbsent(targetGroup.getId(), key ->
                         smppConnections.stream().filter(e -> StringUtils.equals(e.getId(), targetGroup.getId())).map(factory)
                                 .findFirst().orElse(null));
                 if (target != null) {
@@ -101,7 +98,7 @@ public final class SmppConnectionDecider extends RouteBuilder {
                         .allMatch(entry -> StringUtils.equals(entry.getValue(),
                                 smppConnectionDefinition.getTags().get(entry.getKey())));
                 if (isSuitable) {
-                    SmppConnectionInformation target = factory.apply(smppConnectionDefinition);
+                    SmppConnectionObject target = factory.apply(smppConnectionDefinition);
                     collection.add(target);
                     uniquenessCache.put(target.getId(), target);
                 }
@@ -158,14 +155,14 @@ public final class SmppConnectionDecider extends RouteBuilder {
             exchange.getIn().removeHeader(HermesConstants.SMPP_CONNECTION_ITERATOR);
             throw new NoSuchElementException();
         }
-        SmppConnectionInformation target = iterator.next();
+        SmppConnectionObject target = iterator.next();
         exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION, target);
         exchange.getIn().setHeader(HermesConstants.POLICY, target.getPolicy());
         exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION_ITERATOR, iterator);
     }
 
-    static class PolicyChainIterator implements Iterator<SmppConnectionInformation> {
-        private Iterator<SmppConnectionInformation> target;
+    static class PolicyChainIterator implements Iterator<SmppConnectionObject> {
+        private Iterator<SmppConnectionObject> target;
         private final Iterator<Policy> policies;
         private final List<String> visited = new ArrayList<>();
 
@@ -178,12 +175,12 @@ public final class SmppConnectionDecider extends RouteBuilder {
             return this.policies.hasNext() || this.target.hasNext();
         }
 
-        public SmppConnectionInformation next() {
+        public SmppConnectionObject next() {
             if (!this.target.hasNext() && this.policies.hasNext()) {
                 this.target = this.policies.next().getTarget().iterator();
                 return next();
             } else if (this.target.hasNext()) {
-                SmppConnectionInformation targetObject = target.next();
+                SmppConnectionObject targetObject = target.next();
                 if (visited.contains(targetObject.getId())) {
                     return next();
                 }

@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.engine.smpp;
+package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import lombok.Builder;
@@ -11,8 +11,9 @@ import java.util.function.Predicate;
 @Builder
 public class Policy {
     private String id;
-    private List<SmppConnectionInformation> target;
+    private List<SmppConnectionObject> target;
     private Predicate<SendSmsRequest> predicate;
+
     public boolean isPermitted(SendSmsRequest request) {
         return this.predicate == null ? Boolean.FALSE : this.predicate.test(request);
     }

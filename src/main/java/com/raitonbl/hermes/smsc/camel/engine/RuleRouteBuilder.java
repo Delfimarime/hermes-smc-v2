@@ -98,7 +98,7 @@ public class RuleRouteBuilder extends RouteBuilder {
             definition = definition
                     .doTry()
                         .to(this.configuration.toCamelURI())
-                    .doCatch(NoSuchKeyException.class)
+                    .doCatch(opts.getCatchableReadException())
                         .log(opts.getOnCatchReadExceptionLog())
                     .end();
         } else {
