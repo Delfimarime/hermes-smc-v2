@@ -1,11 +1,10 @@
-package com.raitonbl.hermes.smsc.config.rule;
+package com.raitonbl.hermes.smsc.config.policy;
 
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.util.function.Consumer;
 
 @Getter
 @Setter

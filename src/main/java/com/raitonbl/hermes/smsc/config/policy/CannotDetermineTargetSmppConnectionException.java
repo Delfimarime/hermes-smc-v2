@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.config.rule;
+package com.raitonbl.hermes.smsc.config.policy;
 
 public class CannotDetermineTargetSmppConnectionException extends RuntimeException {
     public CannotDetermineTargetSmppConnectionException() {

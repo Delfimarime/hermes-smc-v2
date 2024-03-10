@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.config.rule;
+package com.raitonbl.hermes.smsc.config.policy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;

@@ -8,7 +8,6 @@ import com.raitonbl.hermes.smsc.config.RuleConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -35,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class PolicyRouteBuilder extends RouteBuilder {
-    public static final String CACHE_NAME = "kv_rule";
+    public static final String CACHE_NAME = "policies";
     public static final String POLICY_CACHE_KEY = "default";
     private ObjectMapper objectMapper;
     private RuleConfiguration configuration;

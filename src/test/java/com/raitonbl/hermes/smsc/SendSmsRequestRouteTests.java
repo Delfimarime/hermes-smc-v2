@@ -7,7 +7,7 @@ import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.engine.SmppConnectionRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
-import com.raitonbl.hermes.smsc.config.rule.*;
+import com.raitonbl.hermes.smsc.config.policy.*;
 import com.raitonbl.hermes.smsc.sdk.HermesConstants;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.apache.camel.*;

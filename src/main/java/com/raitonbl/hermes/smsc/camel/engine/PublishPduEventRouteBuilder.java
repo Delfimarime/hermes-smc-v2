@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PublishPduEventRouteBuilder extends RouteBuilder {
 
-    HermesConfiguration configuration;
+    private HermesConfiguration configuration;
 
     @Override
     public void configure() {

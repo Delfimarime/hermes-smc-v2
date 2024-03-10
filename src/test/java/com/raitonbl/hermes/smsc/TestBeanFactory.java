@@ -3,7 +3,7 @@ package com.raitonbl.hermes.smsc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.config.BeanFactory;
-import com.raitonbl.hermes.smsc.config.rule.Rule;
+import com.raitonbl.hermes.smsc.config.policy.Rule;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
