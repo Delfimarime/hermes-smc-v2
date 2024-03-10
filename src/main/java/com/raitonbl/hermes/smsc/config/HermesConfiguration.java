@@ -23,11 +23,12 @@ public class HermesConfiguration {
     @NotEmpty
     private Map<String, SmppConfiguration> services;
     private RuleConfiguration rulesDatasource;
-    private Optional<String> homeDirectory;
+    private String homeDirectory;
 
     public String getHomeDirectory(){
-        return homeDirectory
-                .or(()->Optional.ofNullable(System.getenv("HERMES_SMSC_HOME"))).orElse("./");
+        return  Optional.ofNullable(homeDirectory)
+                .or(()->Optional.ofNullable(System.getenv("HERMES_SMSC_HOME")))
+                .orElse("./");
     }
 
 }

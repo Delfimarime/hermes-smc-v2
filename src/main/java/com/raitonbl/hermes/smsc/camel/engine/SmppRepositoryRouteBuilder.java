@@ -3,6 +3,7 @@ package com.raitonbl.hermes.smsc.camel.engine;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import io.vavr.collection.List;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jcache.JCacheConstants;
@@ -13,23 +14,25 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.NoSuchFileException;
+import java.util.Collections;
 
 @Component
 public class SmppRepositoryRouteBuilder extends RouteBuilder {
     private static final String CACHE_KEY = "GetSmppConnections";
-    private static final String READ_FROM_DATASOURCE_ROUTE_ID = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "_REPOSITORY_DATASOURCE";
+    private static final String READ_FROM_DATASOURCE_ROUTE_ID = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "REPOSITORY_DATASOURCE";
     private static final String DIRECT_TO_READ_FROM_DATASOURCE = "direct:" + READ_FROM_DATASOURCE_ROUTE_ID;
     private JCachePolicy jCachePolicy;
     private HermesConfiguration configuration;
 
     @Override
     public void configure() throws Exception {
+        String readFileURI = "file:" + configuration.getHomeDirectory() + "/config?fileName=smpp.json&exchangePattern=InOnly&autoCreate=false&noop=true&readLock=none";
         from(DIRECT_TO_READ_FROM_DATASOURCE)
                 .routeId(READ_FROM_DATASOURCE_ROUTE_ID)
-                .setHeader(JCacheConstants.ACTION, simple("GET"))
-                .setHeader(JCacheConstants.KEY, simple(CACHE_KEY))
                 .policy(jCachePolicy)
-                .to("jcache://" + HermesSystemConstants.KV_CACHE_NAME + "?createCacheIfNotExists=true")
+                .setHeader(JCacheConstants.KEY, constant(CACHE_KEY))
+                .setHeader(JCacheConstants.ACTION, constant("GET"))
+                .to("jcache://" + HermesSystemConstants.KV_CACHE_NAME )
                 .choice()
                     .when(body().isNotNull())
                         .log(LoggingLevel.DEBUG, "Retrieving SmppConnection from jcache[key=\"${headers." +
@@ -37,14 +40,23 @@ public class SmppRepositoryRouteBuilder extends RouteBuilder {
                     .otherwise()
                         .log(LoggingLevel.DEBUG, "Reading SmppConnection from datasource[type=\"filesystem\"]")
                         .doTry()
-                            .to("file:"+configuration.getHomeDirectory()+"/config?fileName=smpp.json&noop=true")
+                            .pollEnrich(readFileURI,1000)
+                            .choice()
+                                .when(body().isNull())
+                                    .setBody(constant("[]"))
+                            .end()
                             .unmarshal().json(JsonLibrary.Jackson, SmppConnectionDefinition[].class)
-                            .setHeader(JCacheConstants.ACTION, simple("PUT"))
-                            .setHeader(JCacheConstants.KEY, simple(CACHE_KEY))
+                            .setHeader(JCacheConstants.KEY, constant(CACHE_KEY))
+                            .setHeader(JCacheConstants.ACTION, constant("PUT"))
                             .toD("jcache://" + HermesSystemConstants.KV_CACHE_NAME)
-                        .doCatch(NoSuchFileException.class)
-                            .setBody(constant("[]"))
                         .endDoTry()
+                        .doCatch(NoSuchFileException.class)
+                            .setBody(constant((Object) new SmppConnectionDefinition[0]))
+                        .endDoTry()
+                .endChoice()
+                .process(exchange -> exchange.getIn().setBody(
+                        List.of(exchange.getIn().getBody(SmppConnectionDefinition[].class))
+                ))
                 .removeHeader(JCacheConstants.ACTION+"|"+JCacheConstants.KEY);
         setGetAllSmppConnectionRoute();
     }

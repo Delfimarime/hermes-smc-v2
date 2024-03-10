@@ -3,7 +3,9 @@ package com.raitonbl.hermes.smsc.config;
 import com.ctc.wstx.shaded.msv_core.util.Uri;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
+import org.apache.camel.model.language.SimpleExpression;
 import org.apache.camel.spring.boot.util.ConditionalOnHierarchicalProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,6 +50,7 @@ public class BeanFactory {
         Cache<String, Object> cache = cacheManager.createCache(HermesSystemConstants.KV_CACHE_NAME, configuration);
         jCachePolicy.setCache(cache);
         jCachePolicy.setCacheManager(cacheManager);
+        jCachePolicy.setKeyExpression( new SimpleExpression("${headers."+ JCacheConstants.KEY +"}"));
         return jCachePolicy;
     }
 
