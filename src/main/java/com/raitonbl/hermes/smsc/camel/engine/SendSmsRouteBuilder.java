@@ -21,15 +21,13 @@ import java.util.stream.Stream;
 
 @Component
 public class SendSmsRouteBuilder extends RouteBuilder {
-    private static final String ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "SEND_MESSAGE";
-    public static final String DIRECT_TO_ROUTE_ID = "direct:" + ROUTE_ID;
     private static final String RULES_QUEUE_HEADER = HermesConstants.HEADER_PREFIX + "Rules";
     private static final String TARGET_RULE_HEADER = HermesConstants.HEADER_PREFIX + "TargetRule";
     public static final String TARGET_SMPP_HEADER = HermesConstants.HEADER_PREFIX + "TargetSmpp";
     public static final String TARGET_SMPP_NAME_HEADER = HermesConstants.HEADER_PREFIX + "TargetSmppName";
-    private static final String NEXT_RULE_ROUTE_ID = ROUTE_ID + "_GET_RULE";
+    private static final String NEXT_RULE_ROUTE_ID = HermesSystemConstants.SEND_SMS_REQUEST_ROUTE + "_GET_RULE";
     private static final String DIRECT_TO_NEXT_RULE_ROUTE_ID = "direct:" + NEXT_RULE_ROUTE_ID;
-    private static final String PROCEED_TO_NEXT_ROUTE_ID = ROUTE_ID + "_PROCEED";
+    private static final String PROCEED_TO_NEXT_ROUTE_ID = HermesSystemConstants.SEND_SMS_REQUEST_ROUTE + "_PROCEED";
     private static final String DIRECT_TO_PROCEED_TO_NEXT_ROUTE_ID = "direct:" + PROCEED_TO_NEXT_ROUTE_ID;
     public static final String RAW_BODY_HEADER = HermesConstants.HEADER_PREFIX + "SendSmsRequest";
 
@@ -79,10 +77,10 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                     .endChoice()
                 .end();
 
-        from(DIRECT_TO_ROUTE_ID)
-                .routeId(ROUTE_ID)
+        from(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_ROUTE)
+                .routeId(HermesSystemConstants.SEND_SMS_REQUEST_ROUTE)
                 .doTry()
-                    .enrich(RuleRouteBuilder.DIRECT_TO_READ_RULES_ROUTE_ID, this::setRulesList)
+                    .enrich(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE, this::setRulesList)
                     .process(this::setTargetSmpp)
                     .to(DIRECT_TO_NEXT_RULE_ROUTE_ID)
                 .doFinally()
@@ -122,7 +120,8 @@ public class SendSmsRouteBuilder extends RouteBuilder {
             return true;
         }
         for (TagCriteria criteria : tagsCriteria) {
-            if (!canSendSmsSinceTagCriteriaMatch(criteria, request.getTags())) {
+            if (!canSendSmsSinceTagCriteriaMatch(criteria,
+                    request.getTags())) {
                 return false;
             }
         }

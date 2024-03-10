@@ -7,6 +7,9 @@ import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.RuleConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
@@ -34,11 +37,6 @@ import java.util.concurrent.TimeUnit;
 public class PolicyRouteBuilder extends RouteBuilder {
     public static final String CACHE_NAME = "kv_rule";
     public static final String POLICY_CACHE_KEY = "default";
-    public static final String READ_FROM_DATASOURCE_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_READ";
-    public static final String DIRECT_TO_READ_FROM_DATASOURCE_ROUTE = "direct:" + READ_FROM_DATASOURCE_ROUTE_ID;
-    public static final String UPDATE_DATASOURCE_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_UPDATE";
-    public static final String DIRECT_TO_UPDATE_DATASOURCE_ROUTE = "direct:" + UPDATE_DATASOURCE_ROUTE_ID;
-    public static final String CACHE_LISTENER_ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "_POLICY_CACHE_LISTENER";
     private ObjectMapper objectMapper;
     private RuleConfiguration configuration;
 
@@ -67,8 +65,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void setReadRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
-        ProcessorDefinition<?> routeDefinition = from(DIRECT_TO_READ_FROM_DATASOURCE_ROUTE)
-                .routeId(READ_FROM_DATASOURCE_ROUTE_ID)
+        ProcessorDefinition<?> routeDefinition = from(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE)
+                .routeId( HermesSystemConstants.READ_POLICIES_FROM_DATASOURCE_ROUTE)
                 .setBody(simple(null))
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
@@ -101,8 +99,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void setUpdateRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
-        from(DIRECT_TO_UPDATE_DATASOURCE_ROUTE)
-                .routeId(DIRECT_TO_UPDATE_DATASOURCE_ROUTE)
+        from(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
+                .routeId(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
                 // Update datasource
                 .process(this.addHeader(opts.getWriteHeaders()))
                 .to(configuration.toPersistCamelURI())
@@ -170,6 +168,18 @@ public class PolicyRouteBuilder extends RouteBuilder {
     @Inject
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+    }
+
+
+    @Getter
+    @Builder
+    public static class PolicyOpts {
+        private String readURI;
+        private String writeURI;
+        private String onCatchReadExceptionLog;
+        private Map<String, ValueBuilder> readHeaders;
+        private Map<String, ValueBuilder> writeHeaders;
+        private Class<? extends Exception> catchableReadException;
     }
 
 }

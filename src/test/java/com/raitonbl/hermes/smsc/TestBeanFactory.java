@@ -2,7 +2,6 @@ package com.raitonbl.hermes.smsc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.engine.RuleRouteBuilder;
 import com.raitonbl.hermes.smsc.config.BeanFactory;
 import com.raitonbl.hermes.smsc.config.rule.Rule;
 import org.mockito.Mockito;

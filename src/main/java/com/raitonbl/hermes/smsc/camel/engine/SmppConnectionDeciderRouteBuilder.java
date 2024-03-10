@@ -5,6 +5,8 @@ import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.sdk.HermesConstants;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import lombok.Builder;
+import lombok.Getter;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jcache.JCacheConstants;
@@ -34,7 +36,7 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
                 .routeId(CACHE_LISTENER_ROUTE_ID)
                 .choice()
                 .when(header(JCacheConstants.KEY).isEqualTo(PolicyRouteBuilder.POLICY_CACHE_KEY))
-                .to(PolicyRouteBuilder.DIRECT_TO_READ_FROM_DATASOURCE_ROUTE)
+                .to(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE)
                 .enrich(HermesSystemConstants.GET_ALL_SMPP_CONNECTIONS_ROUTE, (original, fromComponent) -> {
                     original.getIn()
                             .setHeader(HermesConstants.REPOSITORY_RETURN_OBJECT,
@@ -189,6 +191,18 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
             } else {
                 throw new NoSuchElementException();
             }
+        }
+    }
+
+    @Getter
+    @Builder
+    public static class Policy {
+        private String id;
+        private List<SmppConnectionObject> target;
+        private Predicate<SendSmsRequest> predicate;
+
+        public boolean isPermitted(SendSmsRequest request) {
+            return this.predicate == null ? Boolean.FALSE : this.predicate.test(request);
         }
     }
 

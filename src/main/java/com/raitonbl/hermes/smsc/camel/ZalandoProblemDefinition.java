@@ -9,14 +9,14 @@ import org.springframework.http.HttpStatus;
 @Getter
 @Setter
 @Builder
-public class HttpProblem {
+public class ZalandoProblemDefinition {
     private String type;
     private String title;
     private int status;
     private String detail;
 
     public static ValueBuilder get() {
-        return org.apache.camel.builder.Builder.constant(HttpProblem.builder()
+        return org.apache.camel.builder.Builder.constant(ZalandoProblemDefinition.builder()
                 .detail("An error occurred during your request :(, " +
                         "retry and if it persist contact the administrators")
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -24,14 +24,14 @@ public class HttpProblem {
     }
 
     public static ValueBuilder unprocessableEntity(String operationId) {
-        return org.apache.camel.builder.Builder.constant(HttpProblem.builder()
+        return org.apache.camel.builder.Builder.constant(ZalandoProblemDefinition.builder()
                 .detail("Request doesn't match the specification")
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value()).title("Unprocessable entity")
                 .type("/problems/" + operationId + "/unprocessable-entity").build());
     }
 
     public static ValueBuilder unsupportedMediaType(String operationId) {
-        return org.apache.camel.builder.Builder.constant(HttpProblem.builder()
+        return org.apache.camel.builder.Builder.constant(ZalandoProblemDefinition.builder()
                 .detail("Request doesn't match the specification")
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()).title("Unsupported Media Type")
                 .type("/problems/" + operationId + "/unsupported-media-type").build());
