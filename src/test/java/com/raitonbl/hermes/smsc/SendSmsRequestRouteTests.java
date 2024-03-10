@@ -337,7 +337,7 @@ class SendSmsRequestRouteTests {
         });
         Assertions.assertNotNull(reference.get());
         Assertions.assertEquals(sendSmsRequest.getContent(), reference.get().getIn().getBody());
-        Assertions.assertEquals(sendSmsRequest.getId(), reference.get().getIn().getHeader(HermesConstants.SEND_REQUEST_ID));
+        Assertions.assertEquals(sendSmsRequest.getId(), reference.get().getIn().getHeader(HermesConstants.SEND_SMS_REQUEST_ID));
         Assertions.assertEquals(sendSmsRequest.getDestination(), reference.get().getIn().getHeader(SmppConstants.DEST_ADDR));
     }
 

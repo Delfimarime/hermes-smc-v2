@@ -13,6 +13,7 @@ import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -147,7 +148,10 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
 
     private void process(Exchange exchange) {
         SendSmsRequest sendSmsRequest = exchange.getIn().getBody(SendSmsRequest.class);
-        PolicyChainIterator iterator = exchange.getIn().getHeader("Y", PolicyChainIterator.class);
+        if (sendSmsRequest == null) {
+          return;
+        }
+        PolicyChainIterator iterator = exchange.getIn().getHeader(HermesConstants.SMPP_CONNECTION_ITERATOR, PolicyChainIterator.class);
         if (iterator == null) {
             iterator = new PolicyChainIterator(this.cache.stream().filter(e -> e.isPermitted(sendSmsRequest)).iterator());
         }
@@ -155,7 +159,7 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
             exchange.getIn().removeHeader(HermesConstants.POLICY);
             exchange.getIn().removeHeader(HermesConstants.SMPP_CONNECTION);
             exchange.getIn().removeHeader(HermesConstants.SMPP_CONNECTION_ITERATOR);
-            throw new NoSuchElementException();
+           return;
         }
         SmppConnectionObject target = iterator.next();
         exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION, target);
@@ -205,6 +209,16 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
             return this.predicate == null ? Boolean.FALSE : this.predicate.test(request);
         }
     }
+
+    @Getter
+    @Builder
+    public static class SmppConnectionObject implements Serializable {
+        private String id;
+        private String name;
+        private String alias;
+        private PolicyDefinition policy;
+    }
+
 
 }
 

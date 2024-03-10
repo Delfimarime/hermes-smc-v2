@@ -9,18 +9,14 @@ import jakarta.inject.Inject;
 import lombok.Builder;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.aws2.sqs.Sqs2Constants;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.springframework.stereotype.Component;
 
 @Builder
 @Component
 public class SmppConnectionRouteBuilder extends RouteBuilder {
-    public static final String RECEIVER_ROUTE_ID_FORMAT = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "%s_RECEIVER_CONNECTION";
-    private static final String TRANSCEIVER_CALLBACK_FORMAT = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "%s_TRANSCEIVER_CALLBACK";
-    public static final String TRANSMITTER_ROUTE_ID_FORMAT = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "%s_TRANSMITTER_CONNECTION";
-    private static final String TRANSCEIVER_ROUTE_ID_FORMAT = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "%s_TRANSCEIVER_CONNECTION";
-    public static final String TRANSMITTER_TRANSMIT_ROUTE_ID_FORMAT = TRANSMITTER_ROUTE_ID_FORMAT + "_TRANSMIT";
+
+   private static final  String SMPP_CONNECTION_TRANSCEIVER_CALLBACK_FORMAT = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "%s_TRANSCEIVER_CALLBACK";;
 
     private HermesConfiguration configuration;
 
@@ -43,7 +39,7 @@ public class SmppConnectionRouteBuilder extends RouteBuilder {
     private void setTransmitterEndpoint(SmppConfiguration configuration, String name) {
         SmppConfiguration targetConfiguration = configuration;
         if (configuration.getSmppConnectionType() == SmppConnectionType.TRANSCEIVER) {
-            String redirectTo = String.format(TRANSCEIVER_CALLBACK_FORMAT, name);
+            String redirectTo = String.format(SMPP_CONNECTION_TRANSCEIVER_CALLBACK_FORMAT, name);
             from("direct:" + redirectTo)
                     .id(redirectTo.toUpperCase())
                     .routeId(redirectTo)
@@ -55,21 +51,20 @@ public class SmppConnectionRouteBuilder extends RouteBuilder {
             targetConfiguration.setRedirectTo(redirectTo);
         }
         final var smppConnectionConfiguration = targetConfiguration;
-        String routeId = String.format(TRANSMITTER_ROUTE_ID_FORMAT, name).toUpperCase();
+        String routeId = String.format(HermesSystemConstants.SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, name).toUpperCase();
         CircuitBreakerRouteFactory.setCircuitBreakerRoute(this, configuration.getCircuitBreakerConfig(), routeId, (id) -> {
             from("direct:" + id)
                     .routeId(id.toUpperCase())
                     .routeDescription("Exposes the capability do send an PDU to %s Short message service center")
-                    .log(LoggingLevel.DEBUG, "Sending SendSmsRequest{\"id\":\"${headers." + HermesConstants.SEND_REQUEST_ID + "}\"} through Smpp{\"name\":\"" + name + "\"}")
+                    .log(LoggingLevel.DEBUG, "Sending SendSmsRequest{\"id\":\"${headers." + HermesConstants.SEND_SMS_REQUEST_ID + "}\"} through Smpp{\"name\":\"" + name + "\"}")
                     .to(smppConnectionConfiguration.toCamelURI())
-                    .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                     .end();
         });
     }
 
     private void setReceiverEndpoint(SmppConfiguration configuration, String name) {
         from(configuration.toCamelURI())
-                .routeId(String.format(RECEIVER_ROUTE_ID_FORMAT, name).toUpperCase())
+                .routeId(String.format(HermesSystemConstants.SMPP_CONNECTION_RECEIVER_ROUTE_ID_FORMAT, name).toUpperCase())
                 .routeDescription(String.format("Listens to an PDU from %s Short message service center", name))
                 .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(name))
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
