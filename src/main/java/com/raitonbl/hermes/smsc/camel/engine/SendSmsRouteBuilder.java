@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SendSmsRouteBuilder extends RouteBuilder {
-    public static final String TARGET_SMPP_HEADER = HermesConstants.HEADER_PREFIX + "TargetSmpp";
+
     private static final String EXECUTE_TROUGH_POLICY_ROUTE = HermesSystemConstants.SEND_SMS_REQUEST_ROUTE + "_EXECUTE";
     private static final String DIRECT_TO_EXECUTE_TROUGH_POLICY_ROUTE = "direct:" + EXECUTE_TROUGH_POLICY_ROUTE;
     public static final String RAW_BODY_HEADER = HermesConstants.HEADER_PREFIX + "SendSmsRequest";
@@ -21,7 +21,6 @@ public class SendSmsRouteBuilder extends RouteBuilder {
         from(DIRECT_TO_EXECUTE_TROUGH_POLICY_ROUTE)
                 .routeId(EXECUTE_TROUGH_POLICY_ROUTE)
                 .to(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_ROUTE)
-                .removeHeaders("*")
                 .choice()
                     .when(header(HermesConstants.SMPP_CONNECTION).isNotNull())
                         .doTry()
@@ -30,7 +29,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                             .setHeader(HermesConstants.SEND_SMS_REQUEST_ID, simple("${body.id}"))
                             .log(LoggingLevel.DEBUG, "Attempting to send SendSmsRequest[\"id\":\"${headers."+ HermesConstants.SEND_SMS_REQUEST_ID +"}\"] through SmppConnection[\"names\":\"${headers."+HermesConstants.SMPP_CONNECTION+".name}\"]")
                             .setBody(simple("${body.content}"))
-                            .toD(String.format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT,"${headers." + TARGET_SMPP_HEADER + "}"))
+                            .toD(String.format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT,"${headers." + HermesConstants.SMPP_CONNECTION + ".alias.toUpperCase()}"))
                         .doCatch(Exception.class)
                             .log(LoggingLevel.DEBUG, "Skipping SmppConnection[\"name\":\"${headers."+HermesConstants.SMPP_CONNECTION+".name}\"] during Policy[\"name\":\"${headers."+HermesConstants.POLICY+".id}\",\"version\"=\"${headers."+HermesConstants.POLICY+".version}\"] due to an error")
                             .log(LoggingLevel.ERROR, "${exception.stacktrace}")

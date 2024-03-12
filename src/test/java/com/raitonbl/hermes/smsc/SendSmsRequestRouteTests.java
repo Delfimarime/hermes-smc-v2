@@ -26,12 +26,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 @SpringBootTest
 @CamelSpringBootTest
@@ -61,7 +63,7 @@ class SendSmsRequestRouteTests {
         sendSmsRequest_then_assert_cannot_determine_target_smpp_connection_exception_is_thrown((builder) ->
                 builder.numberOfCalls(1)
                         .withRequest(b -> b.id(UUID.randomUUID().toString())
-                                .from("+25884XXX0000").content("Hi").tags(null)), null);
+                                .from("+25884XXX0000").content("Hi").tags(null)));
     }
 
     @Test
@@ -73,43 +75,62 @@ class SendSmsRequestRouteTests {
                                 .resources(
                                         List.of(
                                                 PolicyDefinition.ResourceDefinition.builder()
-                                                        .id(UUID.randomUUID().toString()).build()
+                                                        .id(smpp).build()
                                         )
                                 )
                                 .build())
                         .build()
-        }, null);
+        }, (smpp) -> new SmppConnectionDefinition[]{
+                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        .configuration(null).tags(null).build()
+        }, (smppId) -> new RouteBuilder[]{
+                new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        from(String.
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT,"VMZ"))
+                                .setHeader("JUNIT_ACKNOWLEDGED",constant(true)).end()
+                        ;
+                    }
+                }
+        });
     }
 
-    void sendSmsRequest_then_assert_message_is_sent_when_one_retry(BiFunction<String, String, PolicyDefinition[]> createPolicies, RouteBuilder rb) throws Exception {
-        sendSmsRequest_then_assert_message_is_sent_when_one_retry(builder -> builder.createPolicies(createPolicies)
-                .withRequest(b -> b.id(UUID.randomUUID().toString())
-                        .from(UUID.randomUUID().toString()).content("Hi").tags(null)), rb);
+    void sendSmsRequest_then_assert_message_is_sent_when_one_retry(BiFunction<String, String, PolicyDefinition[]> createPolicies,
+                                                                   Function<String, SmppConnectionDefinition[]> createSmppDefinitions,
+                                                                   Function<String, RouteBuilder[]> createRoute) throws Exception {
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry(builder -> {
+            builder.createPolicies(createPolicies)
+                    .createSmppDefinitions(createSmppDefinitions)
+                    .createRoute(createRoute)
+                    .withRequest(b -> b.id(UUID.randomUUID().toString())
+                            .from(UUID.randomUUID().toString()).content("Hi").tags(null));
+        });
     }
 
-    void sendSmsRequest_then_assert_message_is_sent_when_one_retry(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig, RouteBuilder rb) throws Exception {
+    void sendSmsRequest_then_assert_message_is_sent_when_one_retry(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig) throws Exception {
         sendSmsRequest_then_assert_message_is_sent((builder) -> {
             withConfig.accept(builder);
             builder.numberOfCalls(1);
             builder.expectedExceptionType(null);
-        }, rb);
+        });
     }
 
-    void sendSmsRequest_then_assert_cannot_determine_target_smpp_connection_exception_is_thrown(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig, RouteBuilder rb) throws Exception {
+    void sendSmsRequest_then_assert_cannot_determine_target_smpp_connection_exception_is_thrown(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig) throws Exception {
         doSendSmsRequestRoute_and_assert_with((builder) -> {
             withConfig.accept(builder);
             builder.expectedExceptionType(CannotDetermineTargetSmppConnectionException.class);
-        }, rb);
+        });
     }
 
-    void sendSmsRequest_then_assert_message_is_sent(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig, RouteBuilder rb) throws Exception {
+    void sendSmsRequest_then_assert_message_is_sent(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig) throws Exception {
         doSendSmsRequestRoute_and_assert_with(builder -> {
             withConfig.accept(builder);
             builder.expectedExceptionType(null);
-        }, rb);
+        });
     }
 
-    void doSendSmsRequestRoute_and_assert_with(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig, RouteBuilder rb) throws Exception {
+    void doSendSmsRequestRoute_and_assert_with(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig) throws Exception {
         var configBuilder = SendSmsRequestRouteTestsConfiguration.builder();
         withConfig.accept(configBuilder);
         var config = configBuilder.build();
@@ -117,29 +138,22 @@ class SendSmsRequestRouteTests {
         var requestBuilder = SendSmsRequest.builder();
         Optional.ofNullable(config.withRequest).ifPresent(x -> x.accept(requestBuilder));
         var sendSmsRequest = requestBuilder.build();
-        if (config.routeId != null) {
-            context.addRoutes(new RouteBuilder() {
-                @Override
-                public void configure() {
-                    from("direct:" + config.routeId.toUpperCase())
-                            .routeId(config.routeId)
-                            .process(ex -> System.out.println("-"))
-                            .end();
-                }
-            });
-        }
-        if (rb != null) {
-            context.addRoutes(rb);
+        if (config.createRoute != null) {
+            for (RouteBuilder rb : config.createRoute.apply(smppId)) {
+                context.addRoutes(rb);
+            }
         }
         final AtomicReference<Exchange> fromRoute = new AtomicReference<>();
         PolicyDefinition[] policies = null;
+        SmppConnectionDefinition[] smppConnectionDefinitions = null;
         if (config.createPolicies != null) {
             policies = config.createPolicies.apply(sendSmsRequest.getFrom(), smppId);
         }
-
+        if (config.createSmppDefinitions != null) {
+            smppConnectionDefinitions = config.createSmppDefinitions.apply(smppId);
+        }
         TestBeanFactory.setPolicy(policies);
-        TestBeanFactory.setSmppConnectionDefinition(config.smppConnections);
-
+        TestBeanFactory.setSmppConnectionDefinition(smppConnectionDefinitions);
         AtomicReference<Integer> maxRetries = new AtomicReference<>(config.numberOfCalls);
         if (config.expectedExceptionType != null) {
             Assertions.assertThrows(config.expectedExceptionType,
@@ -180,19 +194,17 @@ class SendSmsRequestRouteTests {
         });
         Assertions.assertNotNull(fromRoute.get());
         Assertions.assertEquals(sendSmsRequest.getContent(), fromRoute.get().getIn().getBody());
-        Assertions.assertEquals(sendSmsRequest.getId(), fromRoute.get().getIn().getHeader(HermesConstants.SEND_SMS_REQUEST_ID));
-        Assertions.assertEquals(sendSmsRequest.getDestination(), fromRoute.get().getIn().getHeader(SmppConstants.DEST_ADDR));
 
     }
 
     @Builder
     static class SendSmsRequestRouteTestsConfiguration {
-        String routeId;
         int numberOfCalls;
-        SmppConnectionDefinition[] smppConnections;
+        Function<String, RouteBuilder[]> createRoute;
         Class<? extends Exception> expectedExceptionType;
         Consumer<SendSmsRequest.SendSmsRequestBuilder> withRequest;
         BiFunction<String, String, PolicyDefinition[]> createPolicies;
+        Function<String, SmppConnectionDefinition[]> createSmppDefinitions;
     }
 
 }

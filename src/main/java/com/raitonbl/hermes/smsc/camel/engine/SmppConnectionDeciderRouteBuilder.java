@@ -121,7 +121,8 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
                 if (uniquenessCache.containsKey(smppConnectionDefinition.getId())) {
                     break;
                 }
-                boolean isSuitable = targetGroup.getTags().entrySet().stream()
+                Map<String,String> tags = Optional.ofNullable(targetGroup.getTags()).orElse(Map.of());
+                boolean isSuitable = tags.entrySet().stream()
                         .allMatch(entry -> StringUtils.equals(entry.getValue(),
                                 smppConnectionDefinition.getTags().get(entry.getKey())));
                 if (isSuitable) {
@@ -190,6 +191,7 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
         exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION, target);
         exchange.getIn().setHeader(HermesConstants.POLICY, target.getPolicy());
         exchange.getIn().setHeader(HermesConstants.SMPP_CONNECTION_ITERATOR, iterator);
+
     }
 
     static class PolicyChainIterator implements Iterator<SmppConnectionObject> {
@@ -207,7 +209,10 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
         }
 
         public SmppConnectionObject next() {
-            if (!this.target.hasNext() && this.policies.hasNext()) {
+            if (this.target == null) {
+                this.target = Collections.emptyIterator();
+                return next();
+            } else if (!this.target.hasNext() && this.policies.hasNext()) {
                 this.target = this.policies.next().getTarget().iterator();
                 return next();
             } else if (this.target.hasNext()) {

@@ -7,7 +7,7 @@ public interface HermesConstants {
     String POLICY = HEADER_PREFIX + "SendRequestPolicy";
     String SMPP_CONNECTION = HEADER_PREFIX + "SmppConnection";
     String POLICIES = HEADER_PREFIX + "SendRequestPolicies";
-    String SMPP_CONNECTION_ITERATOR =SMPP_CONNECTION+"_ITERATOR";
+    String SMPP_CONNECTION_ITERATOR =SMPP_CONNECTION+"Iterator";
 
     String REPOSITORY_RETURN_OBJECT = HEADER_PREFIX + "RepositoryReturnObject";
 }
