@@ -1,7 +1,7 @@
 package com.raitonbl.hermes.smsc.camel;
 
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
-import com.raitonbl.hermes.smsc.config.RuleConfiguration;
+import com.raitonbl.hermes.smsc.config.PolicyConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
@@ -23,7 +23,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
     public static final String PUT_RULES_ENDPOINT_ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX +"_HTTP_PUT_RULES";
     private static final String PUT_OPERATION_ID = "setRules";
     private static final String GET_OPERATION_ID = "getRules";
-    private RuleConfiguration configuration;
+    private PolicyConfiguration configuration;
 
     @Override
     public void configure() {
@@ -117,7 +117,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
 
     @Inject
     public void setConfiguration(HermesConfiguration configuration) {
-        this.configuration = configuration.getRulesDatasource();
+        this.configuration = configuration.getPolicyRepository();
     }
 
 }

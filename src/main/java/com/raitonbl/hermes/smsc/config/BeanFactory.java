@@ -1,17 +1,13 @@
 package com.raitonbl.hermes.smsc.config;
 
-import com.ctc.wstx.shaded.msv_core.util.Uri;
-import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.camel.model.language.SimpleExpression;
-import org.apache.camel.spring.boot.util.ConditionalOnHierarchicalProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -85,11 +81,11 @@ public class BeanFactory {
     @ConditionalOnProperty(name = "spring.boot.hermes.rules-datasource.type", havingValue = "redis")
     public RedisConnectionFactory redisConnectionFactory(HermesConfiguration configuration) {
         RedisStandaloneConfiguration cfg = new RedisStandaloneConfiguration(
-                configuration.getRulesDatasource().getHost(), configuration.getRulesDatasource().getPort()
+                configuration.getPolicyRepository().getHost(), configuration.getPolicyRepository().getPort()
         );
-        Optional.ofNullable(configuration.getRulesDatasource().getUsername()).ifPresent(cfg::setUsername);
-        Optional.ofNullable(configuration.getRulesDatasource().getPassword()).ifPresent(cfg::setPassword);
-        Optional.ofNullable(configuration.getRulesDatasource().getDatabase()).ifPresent(cfg::setDatabase);
+        Optional.ofNullable(configuration.getPolicyRepository().getUsername()).ifPresent(cfg::setUsername);
+        Optional.ofNullable(configuration.getPolicyRepository().getPassword()).ifPresent(cfg::setPassword);
+        Optional.ofNullable(configuration.getPolicyRepository().getDatabase()).ifPresent(cfg::setDatabase);
         return new LettuceConnectionFactory(cfg);
     }
 

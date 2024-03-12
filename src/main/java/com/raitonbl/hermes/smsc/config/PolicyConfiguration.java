@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Getter
 @Setter
-public class RuleConfiguration implements CamelConfiguration {
+public class PolicyConfiguration implements CamelConfiguration {
     private String host; // Redis/Dragonfly
     private Integer port; // Redis/Dragonfly
     private String username; // Redis/Dragonfly

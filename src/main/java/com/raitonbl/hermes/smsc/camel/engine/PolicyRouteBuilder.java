@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
-import com.raitonbl.hermes.smsc.config.RuleConfiguration;
+import com.raitonbl.hermes.smsc.config.PolicyConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import lombok.Builder;
@@ -37,7 +37,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
     public static final String CACHE_NAME = "policies";
     public static final String POLICY_CACHE_KEY = "default";
     private ObjectMapper objectMapper;
-    private RuleConfiguration configuration;
+    private PolicyConfiguration configuration;
 
     @Override
     public void configure() {
@@ -128,7 +128,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
         exchange.getIn().setBody(collection);
     }
 
-    private PolicyOpts from(RuleConfiguration cfg) {
+    private PolicyOpts from(PolicyConfiguration cfg) {
         switch (cfg.getType()) {
             case REDIS, DRAGONFLY -> {
                 return PolicyOpts.builder().readURI(cfg.toCamelURI()).writeURI(cfg.toPersistCamelURI())
@@ -161,7 +161,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
 
     @Inject
     public void setConfiguration(HermesConfiguration configuration) {
-        this.configuration = configuration.getRulesDatasource();
+        this.configuration = configuration.getPolicyRepository();
     }
 
     @Inject

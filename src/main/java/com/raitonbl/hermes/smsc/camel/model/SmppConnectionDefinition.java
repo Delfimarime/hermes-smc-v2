@@ -2,10 +2,12 @@ package com.raitonbl.hermes.smsc.camel.model;
 
 import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.Map;
 
 @Data
+@ToString
 public class SmppConnectionDefinition {
     private String id;
     private String name;

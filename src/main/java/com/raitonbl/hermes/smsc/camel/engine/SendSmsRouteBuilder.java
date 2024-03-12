@@ -20,9 +20,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
         from(DIRECT_TO_EXECUTE_TROUGH_POLICY_ROUTE)
                 .routeId(EXECUTE_TROUGH_POLICY_ROUTE)
-                .log("<!==== ${body}")
                 .to(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_ROUTE)
-                .log("C:${body} ====!>")
                 .removeHeaders("*")
                 .choice()
                     .when(header(HermesConstants.SMPP_CONNECTION).isNotNull())

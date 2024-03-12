@@ -22,10 +22,10 @@ spring:
           queue: unsupported-pdu-queue
         delivery-receipt-channel:
           queue: delivery-receipt-queue
-      rules-datasource:
+      policy-repository:
         type: s3
         bucket: hermes
-        key: rules.json
+        key: policy.json
         expose-api: false
   cloud:
     discovery:

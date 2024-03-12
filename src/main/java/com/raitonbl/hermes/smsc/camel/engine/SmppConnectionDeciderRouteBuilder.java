@@ -73,7 +73,8 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
     @SuppressWarnings({"unchecked"})
     private void setCache(Exchange exchange) {
         synchronized (LOCK) {
-            List<PolicyDefinition> policies = exchange.getIn().getHeader(HermesConstants.POLICIES, List.class);
+            List<PolicyDefinition> policies = exchange.getIn()
+                    .getHeader(HermesConstants.POLICIES, List.class);
             if (policies == null || policies.isEmpty()) {
                 this.cache = Collections.emptyList();
                 return;
@@ -174,7 +175,8 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
         if (sendSmsRequest == null) {
           return;
         }
-        PolicyChainIterator iterator = exchange.getIn().getHeader(HermesConstants.SMPP_CONNECTION_ITERATOR, PolicyChainIterator.class);
+        PolicyChainIterator iterator = exchange.getIn()
+                .getHeader(HermesConstants.SMPP_CONNECTION_ITERATOR, PolicyChainIterator.class);
         if (iterator == null) {
             iterator = new PolicyChainIterator(this.cache.stream().filter(e -> e.isPermitted(sendSmsRequest)).iterator());
         }

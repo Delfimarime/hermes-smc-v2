@@ -22,7 +22,7 @@ public class HermesConfiguration {
     private SendSmsListenerConfiguration listenTo;
     @NotEmpty
     private Map<String, SmppConfiguration> services;
-    private RuleConfiguration rulesDatasource;
+    private PolicyConfiguration policyRepository;
     private String homeDirectory;
 
     public String getHomeDirectory(){

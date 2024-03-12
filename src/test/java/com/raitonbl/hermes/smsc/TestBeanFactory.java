@@ -38,8 +38,9 @@ public class TestBeanFactory {
     public static List<PolicyDefinition> policies = null;
 
     public static void setPolicy(PolicyDefinition... definition) {
-        Optional.ofNullable(Caching.getCachingProvider().getCacheManager().getCache(PolicyRouteBuilder.CACHE_NAME))
-                .ifPresent(Cache::clear);
+        Optional.ofNullable(
+                Caching.getCachingProvider().getCacheManager().getCache(PolicyRouteBuilder.CACHE_NAME)
+        ).ifPresent(Cache::clear);
         TestBeanFactory.policies = definition == null ? Collections.emptyList() : Arrays.asList(definition);
     }
 
@@ -87,8 +88,8 @@ public class TestBeanFactory {
 
     @Primary
     @Bean(BeanFactory.AWS_S3_CLIENT)
-    @ConditionalOnProperty(name = "spring.boot.hermes.rules-datasource.type", havingValue = "s3")
-    public S3Client getS3Client(ObjectMapper objectMapper) throws Exception {
+    @ConditionalOnProperty(name = "spring.boot.hermes.policy-repository.type", havingValue = "s3")
+    public S3Client getS3Client(ObjectMapper objectMapper) {
         S3Client s3Client = Mockito.mock(S3Client.class);
         Answer<?> onS3GetObject = (iv) -> {
             if (policies == null) {

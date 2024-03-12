@@ -70,7 +70,8 @@ class SendSmsRequestRouteTests {
                                 .from(from)
                                 .resources(
                                         List.of(
-                                                PolicyDefinition.ResourceDefinition.builder().id(smpp).build()
+                                                PolicyDefinition.ResourceDefinition.builder()
+                                                        .id(UUID.randomUUID().toString()).build()
                                         )
                                 )
                                 .build())
