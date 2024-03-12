@@ -34,18 +34,23 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
         from(DIRECT_TO_CONSTRUCT_POLICY_CACHE_ROUTE)
                 .routeId(CONSTRUCT_POLICY_CACHE_ROUTE)
-                .to(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE)
-                .enrich(HermesSystemConstants.DIRECT_TO_GET_ALL_SMPP_CONNECTIONS_ROUTE, (original, fromComponent) -> {
+                .enrich(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE, (original, fromComponent) -> {
+                    original.getIn()
+                            .setHeader(HermesConstants.POLICIES, fromComponent.getIn().getBody());
+                    return original;
+                }).enrich(HermesSystemConstants.DIRECT_TO_GET_ALL_SMPP_CONNECTIONS_ROUTE, (original, fromComponent) -> {
                     original.getIn()
                             .setHeader(HermesConstants.REPOSITORY_RETURN_OBJECT,
                                     fromComponent.getIn().getBody());
                     return original;
-                }).process(this::setCache)
-                .removeProperties(HermesConstants.REPOSITORY_RETURN_OBJECT);
+                })
+                .process(this::setCache)
+                .removeHeader(HermesConstants.POLICIES)
+                .removeHeader(HermesConstants.REPOSITORY_RETURN_OBJECT);
 
         from(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_ROUTE)
                 .routeId(HermesSystemConstants.SMPP_DECIDER_ROUTE)
-                .setHeader(POLICY_CACHE,constant(cache))
+                .setHeader(POLICY_CACHE, constant(cache))
                 .doTry()
                     .choice()
                         .when(header(POLICY_CACHE).isNull())
@@ -68,7 +73,7 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
     @SuppressWarnings({"unchecked"})
     private void setCache(Exchange exchange) {
         synchronized (LOCK) {
-            List<PolicyDefinition> policies = exchange.getIn().getBody(List.class);
+            List<PolicyDefinition> policies = exchange.getIn().getHeader(HermesConstants.POLICIES, List.class);
             if (policies == null || policies.isEmpty()) {
                 this.cache = Collections.emptyList();
                 return;
