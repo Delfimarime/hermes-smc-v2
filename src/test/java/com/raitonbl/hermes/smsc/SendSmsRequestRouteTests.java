@@ -3,6 +3,7 @@ package com.raitonbl.hermes.smsc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
+import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.policy.Rule;
@@ -52,6 +53,7 @@ class SendSmsRequestRouteTests {
     @BeforeEach
     void init() {
         TestBeanFactory.setPolicy();
+        TestBeanFactory.setSmppConnectionDefinition();
     }
 
     @Test
@@ -134,7 +136,10 @@ class SendSmsRequestRouteTests {
         if (config.createPolicies != null) {
             policies = config.createPolicies.apply(sendSmsRequest.getFrom(), smppId);
         }
+
         TestBeanFactory.setPolicy(policies);
+        TestBeanFactory.setSmppConnectionDefinition(config.smppConnections);
+
         AtomicReference<Integer> maxRetries = new AtomicReference<>(config.numberOfCalls);
         if (config.expectedExceptionType != null) {
             Assertions.assertThrows(config.expectedExceptionType,
@@ -157,7 +162,7 @@ class SendSmsRequestRouteTests {
                             }
                             attempts++;
                         } while (attempts <= maxRetries.get());
-                       throw caught;
+                        throw caught;
                     });
             return;
         }
@@ -184,6 +189,7 @@ class SendSmsRequestRouteTests {
     static class SendSmsRequestRouteTestsConfiguration {
         String routeId;
         int numberOfCalls;
+        SmppConnectionDefinition[] smppConnections;
         Class<? extends Exception> expectedExceptionType;
         Consumer<SendSmsRequest.SendSmsRequestBuilder> withRequest;
         BiFunction<String, String, PolicyDefinition[]> createPolicies;

@@ -18,7 +18,7 @@ import java.util.Collections;
 
 @Component
 public class SmppRepositoryRouteBuilder extends RouteBuilder {
-    private static final String CACHE_KEY = "GetSmppConnections";
+    public static final String CACHE_KEY = "GetSmppConnections";
     private static final String READ_FROM_DATASOURCE_ROUTE_ID = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "REPOSITORY_DATASOURCE";
     private static final String DIRECT_TO_READ_FROM_DATASOURCE = "direct:" + READ_FROM_DATASOURCE_ROUTE_ID;
     private JCachePolicy jCachePolicy;

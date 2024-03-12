@@ -3,8 +3,11 @@ package com.raitonbl.hermes.smsc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.camel.engine.PolicyRouteBuilder;
+import com.raitonbl.hermes.smsc.camel.engine.SmppRepositoryRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
+import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.config.BeanFactory;
+import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -43,6 +46,19 @@ public class TestBeanFactory {
         ).ifPresent(Cache::clear);
         TestBeanFactory.policies = definition == null ? Collections.emptyList() : Arrays.asList(definition);
     }
+
+    public static void setSmppConnectionDefinition(SmppConnectionDefinition... definition) {
+        if(definition ==null || definition.length==0){
+            Optional.ofNullable(
+                    Caching.getCachingProvider().getCacheManager().getCache(HermesSystemConstants.KV_CACHE_NAME)
+            ).ifPresent(cache -> cache.remove(SmppRepositoryRouteBuilder.CACHE_KEY));
+            return;
+        }
+        Optional.ofNullable(
+                Caching.getCachingProvider().getCacheManager().getCache(HermesSystemConstants.KV_CACHE_NAME)
+        ).ifPresent(cache -> cache.put(SmppRepositoryRouteBuilder.CACHE_KEY, definition));
+    }
+
 
     @Primary
     @Bean(BeanFactory.AWS_SQS_CLIENT)
