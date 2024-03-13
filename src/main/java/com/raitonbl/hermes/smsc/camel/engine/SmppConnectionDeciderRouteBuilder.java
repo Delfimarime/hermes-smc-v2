@@ -76,18 +76,18 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
             List<PolicyDefinition> policies = exchange.getIn()
                     .getHeader(HermesConstants.POLICIES, List.class);
             if (policies == null || policies.isEmpty()) {
-                this.cache = Collections.emptyList();
+                this.cache = new ArrayList<>();
                 return;
             }
             List<SmppConnectionDefinition> connections = exchange.getIn()
                     .getHeader(HermesConstants.REPOSITORY_RETURN_OBJECT, List.class);
             if (connections == null || connections.isEmpty()) {
-                this.cache = Collections.emptyList();
+                this.cache = new ArrayList<>();
                 return;
             }
             this.cache = policies.stream().map(policy -> Policy.builder().id(policy.getId())
                     .target(getTargetFrom(policy, connections))
-                    .predicate(createPredicateFrom(policy)).build()).toList();
+                    .predicate(createPredicateFrom(policy)).build()).collect(Collectors.toList());
         }
     }
 

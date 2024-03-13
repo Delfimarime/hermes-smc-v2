@@ -6,10 +6,7 @@ import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectionException;
-import com.raitonbl.hermes.smsc.config.policy.Rule;
-import com.raitonbl.hermes.smsc.config.policy.RuleSpec;
-import com.raitonbl.hermes.smsc.config.policy.TagCriteria;
-import com.raitonbl.hermes.smsc.sdk.HermesConstants;
+import com.raitonbl.hermes.smsc.config.policy.CannotSendSmsRequestException;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import lombok.Builder;
 import org.apache.camel.CamelContext;
@@ -17,7 +14,6 @@ import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.smpp.SmppConstants;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,8 +52,8 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
-    void sendSmsRequest_when_no_rules_and_throw_exception() throws Exception {
-        sendSmsRequest_then_assert_cannot_determine_target_smpp_connection_exception_is_thrown((builder) ->
+    void sendSmsRequest_when_no_policies_and_throw_exception() throws Exception {
+        sendSmsRequest_then_assert_exception_is_thrown((builder) ->
                 builder.numberOfCalls(1)
                         .withRequest(b -> b.id(UUID.randomUUID().toString())
                                 .from("+25884XXX0000").content("Hi").tags(null)));
@@ -131,6 +127,40 @@ class SendSmsRequestRouteTests {
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
                                 .from(from)
+                                .resources(
+                                        List.of(
+                                                PolicyDefinition.ResourceDefinition.builder()
+                                                        .id(smpp).build()
+                                        )
+                                )
+                                .build())
+                        .build()
+        }, (smpp) -> new SmppConnectionDefinition[]{
+                SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
+                        .configuration(null).tags(null).build(),
+                SmppConnectionDefinition.builder().id("xmz").name("xmz").alias("xmz").description(null)
+                        .configuration(null).tags(null).build(),
+                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        .configuration(null).tags(null).build()
+        }, (smppId) -> new RouteBuilder[]{
+                new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        from(String.
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                        ;
+                    }
+                }
+        });
+    }
+
+    @Test
+    void sendSmsRequest_when_no_matching_policies_and_throw_exception() throws Exception {
+        sendSmsRequest_then_assert_exception_is_thrown((from, smpp) -> new PolicyDefinition[]{
+                PolicyDefinition.builder().id("test").version("latest")
+                        .spec(PolicyDefinition.Spec.builder()
+                                .from("Ebankit")
                                 .resources(
                                         List.of(
                                                 PolicyDefinition.ResourceDefinition.builder()
@@ -299,6 +329,78 @@ class SendSmsRequestRouteTests {
                 });
     }
 
+    @Test
+    void sendSmsRoute_then_catch_exception_thrown_by_smpp_connection() throws Exception {
+        sendSmsRequest_then_assert_exception_is_thrown((from, smpp) -> new PolicyDefinition[]{
+                PolicyDefinition.builder().id("test").version("latest")
+                        .spec(PolicyDefinition.Spec.builder()
+                                .from(from)
+                                .resources(
+                                        List.of(
+                                                PolicyDefinition.ResourceDefinition.builder()
+                                                        .id(smpp).build()
+                                        )
+                                )
+                                .build())
+                        .build()
+        }, (smpp) -> new SmppConnectionDefinition[]{
+                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        .configuration(null).tags(null).build()
+        }, (smppId) -> new RouteBuilder[]{
+                new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        from(String.
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                .throwException(new IllegalStateException()).end()
+                        ;
+                    }
+                }
+        }, (builder) -> builder.expectedExceptionType(CannotSendSmsRequestException.class));
+    }
+    @Test
+    void sendSmsRoute_then_catch_exception_thrown_by_smpp_connection_but_another_can_send() throws Exception {
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
+                PolicyDefinition.builder().id("test").version("latest")
+                        .spec(PolicyDefinition.Spec.builder()
+                                .from(from)
+                                .resources(
+                                        List.of(
+                                                PolicyDefinition.ResourceDefinition.builder()
+                                                        .id(smpp).build(),
+                                                PolicyDefinition.ResourceDefinition.builder()
+                                                        .id("tmz").build()
+                                        )
+                                )
+                                .build())
+                        .build()
+        }, (smpp) -> new SmppConnectionDefinition[]{
+                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        .configuration(null).tags(null).build(),
+                SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
+                        .configuration(null).tags(null).build()
+        }, (smppId) -> new RouteBuilder[]{
+                new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        from(String.
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                .throwException(new IllegalStateException()).end()
+                        ;
+                    }
+                },
+                new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        from(String.
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "TMZ"))
+                                .setHeader("WAS_ACKNOWLEDGED", constant(true)).end()
+                        ;
+                    }
+                }
+        });
+    }
+
     void sendSmsRequest_then_assert_message_is_sent_when_one_retry(BiFunction<String, String, PolicyDefinition[]> createPolicies,
                                                                    Function<String, SmppConnectionDefinition[]> createSmppDefinitions,
                                                                    Function<String, RouteBuilder[]> createRoute) throws Exception {
@@ -327,10 +429,48 @@ class SendSmsRequestRouteTests {
         });
     }
 
-    void sendSmsRequest_then_assert_cannot_determine_target_smpp_connection_exception_is_thrown(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig) throws Exception {
+    void sendSmsRequest_then_assert_exception_is_thrown(
+            BiFunction<String, String, PolicyDefinition[]> createPolicies,
+            Function<String, SmppConnectionDefinition[]> createSmppDefinitions,
+            Function<String, RouteBuilder[]> createRoute) throws Exception {
+        sendSmsRequest_then_assert_exception_is_thrown(b -> b.id(UUID.randomUUID().toString())
+                .from(UUID.randomUUID().toString()).content("Hi").tags(null), createPolicies, createSmppDefinitions, createRoute, null);
+    }
+
+    void sendSmsRequest_then_assert_exception_is_thrown(
+            BiFunction<String, String, PolicyDefinition[]> createPolicies,
+            Function<String, SmppConnectionDefinition[]> createSmppDefinitions,
+            Function<String, RouteBuilder[]> createRoute,
+            Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig) throws Exception {
+        sendSmsRequest_then_assert_exception_is_thrown(b -> b.id(UUID.randomUUID().toString())
+                .from(UUID.randomUUID().toString()).content("Hi").tags(null), createPolicies, createSmppDefinitions, createRoute, withConfig);
+    }
+
+    void sendSmsRequest_then_assert_exception_is_thrown(
+            Consumer<SendSmsRequest.SendSmsRequestBuilder> withRequest,
+            BiFunction<String, String, PolicyDefinition[]> createPolicies,
+            Function<String, SmppConnectionDefinition[]> createSmppDefinitions,
+            Function<String, RouteBuilder[]> createRoute,
+            Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig
+    ) throws Exception {
+        sendSmsRequest_then_assert_exception_is_thrown(builder -> {
+            builder.createPolicies(createPolicies)
+                    .createSmppDefinitions(createSmppDefinitions)
+                    .createRoute(createRoute)
+                    .withRequest(withRequest);
+            if (withConfig != null) {
+                withConfig.accept(builder);
+            }
+        });
+    }
+
+
+    void sendSmsRequest_then_assert_exception_is_thrown(Consumer<SendSmsRequestRouteTestsConfiguration.SendSmsRequestRouteTestsConfigurationBuilder> withConfig) throws Exception {
         doSendSmsRequestRoute_and_assert_with((builder) -> {
             withConfig.accept(builder);
-            builder.expectedExceptionType(CannotDetermineTargetSmppConnectionException.class);
+            if (builder.expectedExceptionType == null) {
+                builder.expectedExceptionType(CannotDetermineTargetSmppConnectionException.class);
+            }
         });
     }
 
