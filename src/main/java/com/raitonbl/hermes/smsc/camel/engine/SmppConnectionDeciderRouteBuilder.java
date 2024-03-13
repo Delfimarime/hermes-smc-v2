@@ -122,9 +122,10 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
                     break;
                 }
                 Map<String,String> tags = Optional.ofNullable(targetGroup.getTags()).orElse(Map.of());
+                Map<String,String> smppTags = Optional.ofNullable(smppConnectionDefinition.getTags()).orElse(Map.of());
+
                 boolean isSuitable = tags.entrySet().stream()
-                        .allMatch(entry -> StringUtils.equals(entry.getValue(),
-                                smppConnectionDefinition.getTags().get(entry.getKey())));
+                        .allMatch(entry -> StringUtils.equals(entry.getValue(), smppTags.get(entry.getKey())));
                 if (isSuitable) {
                     SmppConnectionObject target = factory.apply(smppConnectionDefinition);
                     collection.add(target);
@@ -132,7 +133,7 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
                 }
             }
         }
-        this.cache.clear();
+        Optional.ofNullable(this.cache).ifPresent(List::clear);
         return collection;
     }
 
@@ -157,7 +158,6 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
             if (isSupported && destAddrCondition != null) {
                 return destAddrCondition.test(request.getDestination());
             }
-
             if (isSupported && definition.getSpec().getTags() != null) {
                 isSupported = definition.getSpec().getTags().entrySet().stream().allMatch(entry -> {
                     if (request.getTags() == null) {

@@ -26,10 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -67,7 +64,7 @@ class SendSmsRequestRouteTests {
     }
 
     @Test
-    void sendSmsRoute_then_assert_exchange_for_single_rule() throws Exception {
+    void sendSmsRoute_then_assert_exchange_for_single_policy() throws Exception {
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
@@ -88,23 +85,237 @@ class SendSmsRequestRouteTests {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT,"VMZ"))
-                                .setHeader("JUNIT_ACKNOWLEDGED",constant(true)).end()
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
                         ;
                     }
                 }
         });
     }
 
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_second_policy() throws Exception {
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
+                PolicyDefinition.builder().id("test").version("latest")
+                        .spec(PolicyDefinition.Spec.builder()
+                                .from(from)
+                                .resources(
+                                        List.of(
+                                                PolicyDefinition.ResourceDefinition.builder()
+                                                        .id(smpp).build()
+                                        )
+                                )
+                                .build())
+                        .build()
+        }, (smpp) -> new SmppConnectionDefinition[]{
+                SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
+                        .configuration(null).tags(null).build(),
+                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        .configuration(null).tags(null).build()
+        }, (smppId) -> new RouteBuilder[]{
+                new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        from(String.
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                        ;
+                    }
+                }
+        });
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_third_policy() throws Exception {
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
+                PolicyDefinition.builder().id("test").version("latest")
+                        .spec(PolicyDefinition.Spec.builder()
+                                .from(from)
+                                .resources(
+                                        List.of(
+                                                PolicyDefinition.ResourceDefinition.builder()
+                                                        .id(smpp).build()
+                                        )
+                                )
+                                .build())
+                        .build()
+        }, (smpp) -> new SmppConnectionDefinition[]{
+                SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
+                        .configuration(null).tags(null).build(),
+                SmppConnectionDefinition.builder().id("xmz").name("xmz").alias("xmz").description(null)
+                        .configuration(null).tags(null).build(),
+                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        .configuration(null).tags(null).build()
+        }, (smppId) -> new RouteBuilder[]{
+                new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        from(String.
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                        ;
+                    }
+                }
+        });
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_destination_matches_pattern() throws Exception {
+        String regex = "^25884XXX";
+        String destination = "25884XXX0001";
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry(
+                (b) -> b.id(UUID.randomUUID().toString())
+                        .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
+                (from, smpp) -> new PolicyDefinition[]{
+                        PolicyDefinition.builder().id("test").version("latest")
+                                .spec(PolicyDefinition.Spec.builder()
+                                        .destination(regex)
+                                        .resources(
+                                                List.of(
+                                                        PolicyDefinition.ResourceDefinition.builder()
+                                                                .id(smpp).build()
+                                                )
+                                        )
+                                        .build())
+                                .build()
+                }, (smpp) -> new SmppConnectionDefinition[]{
+                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                                .configuration(null).tags(null).build()
+                }, (smppId) -> new RouteBuilder[]{
+                        new RouteBuilder() {
+                            @Override
+                            public void configure() throws Exception {
+                                from(String.
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                ;
+                            }
+                        }
+                });
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_for_destination_is_equal() throws Exception {
+        String destination = "25884XXX0001";
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry(
+                (b) -> b.id(UUID.randomUUID().toString())
+                        .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
+                (from, smpp) -> new PolicyDefinition[]{
+                        PolicyDefinition.builder().id("test").version("latest")
+                                .spec(PolicyDefinition.Spec.builder()
+                                        .destination(destination)
+                                        .resources(
+                                                List.of(
+                                                        PolicyDefinition.ResourceDefinition.builder()
+                                                                .id(smpp).build()
+                                                )
+                                        )
+                                        .build())
+                                .build()
+                }, (smpp) -> new SmppConnectionDefinition[]{
+                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                                .configuration(null).tags(null).build()
+                }, (smppId) -> new RouteBuilder[]{
+                        new RouteBuilder() {
+                            @Override
+                            public void configure() throws Exception {
+                                from(String.
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                ;
+                            }
+                        }
+                });
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_where_policy_tags_match_smpp_connection() throws Exception {
+        String destination = "25884XXX0001";
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry(
+                (b) -> b.id(UUID.randomUUID().toString())
+                        .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
+                (from, smpp) -> new PolicyDefinition[]{
+                        PolicyDefinition.builder().id("test").version("latest")
+                                .spec(PolicyDefinition.Spec.builder()
+                                        .destination(destination)
+                                        .resources(
+                                                List.of(
+                                                        PolicyDefinition.ResourceDefinition.builder()
+                                                                .tags(Map.of("Tag", "Tag"))
+                                                                .build()
+                                                )
+                                        )
+                                        .build())
+                                .build()
+                }, (smpp) -> new SmppConnectionDefinition[]{
+                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                                .configuration(null).tags(Map.of("Tag", "Tag")).build()
+                }, (smppId) -> new RouteBuilder[]{
+                        new RouteBuilder() {
+                            @Override
+                            public void configure() {
+                                from(String.
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                ;
+                            }
+                        }
+                });
+    }
+
+    @Test
+    void sendSmsRoute_then_assert_exchange_where_sms_request_tags_match_policy() throws Exception {
+        Map<String, String> tags = Map.of("Tag", UUID.randomUUID().toString());
+        String destination = "25884XXX0001";
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry(
+                (b) -> b.id(UUID.randomUUID().toString())
+                        .from(UUID.randomUUID().toString()).destination(destination).content("Hi")
+                        .tags(tags),
+                (from, smpp) -> new PolicyDefinition[]{
+                        PolicyDefinition.builder().id("test").version("latest")
+                                .spec(PolicyDefinition.Spec.builder()
+                                        .tags(tags)
+                                        .resources(
+                                                List.of(
+                                                        PolicyDefinition.ResourceDefinition.builder()
+                                                                .id(smpp).build()
+                                                )
+                                        )
+                                        .build())
+                                .build()
+                }, (smpp) -> new SmppConnectionDefinition[]{
+                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                                .configuration(null).tags(null).build()
+                }, (smppId) -> new RouteBuilder[]{
+                        new RouteBuilder() {
+                            @Override
+                            public void configure() {
+                                from(String.
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                ;
+                            }
+                        }
+                });
+    }
+
     void sendSmsRequest_then_assert_message_is_sent_when_one_retry(BiFunction<String, String, PolicyDefinition[]> createPolicies,
+                                                                   Function<String, SmppConnectionDefinition[]> createSmppDefinitions,
+                                                                   Function<String, RouteBuilder[]> createRoute) throws Exception {
+        sendSmsRequest_then_assert_message_is_sent_when_one_retry(b -> b.id(UUID.randomUUID().toString())
+                        .from(UUID.randomUUID().toString()).content("Hi").tags(null),
+                createPolicies, createSmppDefinitions, createRoute);
+    }
+
+    void sendSmsRequest_then_assert_message_is_sent_when_one_retry(Consumer<SendSmsRequest.SendSmsRequestBuilder> withRequest,
+                                                                   BiFunction<String, String, PolicyDefinition[]> createPolicies,
                                                                    Function<String, SmppConnectionDefinition[]> createSmppDefinitions,
                                                                    Function<String, RouteBuilder[]> createRoute) throws Exception {
         sendSmsRequest_then_assert_message_is_sent_when_one_retry(builder -> {
             builder.createPolicies(createPolicies)
                     .createSmppDefinitions(createSmppDefinitions)
                     .createRoute(createRoute)
-                    .withRequest(b -> b.id(UUID.randomUUID().toString())
-                            .from(UUID.randomUUID().toString()).content("Hi").tags(null));
+                    .withRequest(withRequest);
         });
     }
 
@@ -206,5 +417,4 @@ class SendSmsRequestRouteTests {
         BiFunction<String, String, PolicyDefinition[]> createPolicies;
         Function<String, SmppConnectionDefinition[]> createSmppDefinitions;
     }
-
 }
