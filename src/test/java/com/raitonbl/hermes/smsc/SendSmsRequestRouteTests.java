@@ -9,12 +9,10 @@ import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectio
 import com.raitonbl.hermes.smsc.config.policy.CannotSendSmsRequestException;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import lombok.Builder;
-import org.apache.camel.CamelContext;
-import org.apache.camel.CamelExecutionException;
-import org.apache.camel.Exchange;
-import org.apache.camel.ProducerTemplate;
+import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,9 +44,14 @@ class SendSmsRequestRouteTests {
     CamelContext context;
 
     @BeforeEach
-    void init() {
+    void init() throws Exception {
         TestBeanFactory.setPolicy();
         TestBeanFactory.setSmppConnectionDefinition();
+        for (Route route : this.context.getRoutes()) {
+            if (StringUtils.startsWith(route.getRouteId(), "smpp_connection") || StringUtils.equals(route.getRouteId(), "smpp_connection")) {
+                context.removeRoute(route.getRouteId());
+            }
+        }
     }
 
     @Test
@@ -61,6 +64,7 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRoute_then_assert_exchange_for_single_policy() throws Exception {
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
@@ -74,15 +78,16 @@ class SendSmsRequestRouteTests {
                                 .build())
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
-                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                         .configuration(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true))
+                                .routeId("smpp_connection").end()
                         ;
                     }
                 }
@@ -91,6 +96,7 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRoute_then_assert_exchange_for_second_policy() throws Exception {
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
@@ -106,15 +112,15 @@ class SendSmsRequestRouteTests {
         }, (smpp) -> new SmppConnectionDefinition[]{
                 SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
                         .configuration(null).tags(null).build(),
-                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                         .configuration(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                         ;
                     }
                 }
@@ -123,6 +129,7 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRoute_then_assert_exchange_for_third_policy() throws Exception {
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
@@ -140,15 +147,15 @@ class SendSmsRequestRouteTests {
                         .configuration(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id("xmz").name("xmz").alias("xmz").description(null)
                         .configuration(null).tags(null).build(),
-                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                         .configuration(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                         ;
                     }
                 }
@@ -157,6 +164,7 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRequest_when_no_matching_policies_and_throw_exception() throws Exception {
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_exception_is_thrown((from, smpp) -> new PolicyDefinition[]{
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
@@ -174,16 +182,15 @@ class SendSmsRequestRouteTests {
                         .configuration(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id("xmz").name("xmz").alias("xmz").description(null)
                         .configuration(null).tags(null).build(),
-                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                         .configuration(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
-                        ;
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end();
                     }
                 }
         });
@@ -193,6 +200,7 @@ class SendSmsRequestRouteTests {
     void sendSmsRoute_then_assert_exchange_for_destination_matches_pattern() throws Exception {
         String regex = "^25884XXX";
         String destination = "25884XXX0001";
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry(
                 (b) -> b.id(UUID.randomUUID().toString())
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
@@ -209,15 +217,15 @@ class SendSmsRequestRouteTests {
                                         .build())
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
-                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                                 .configuration(null).tags(null).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() throws Exception {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
                         }
@@ -227,6 +235,7 @@ class SendSmsRequestRouteTests {
     @Test
     void sendSmsRoute_then_assert_exchange_for_destination_is_equal() throws Exception {
         String destination = "25884XXX0001";
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry(
                 (b) -> b.id(UUID.randomUUID().toString())
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
@@ -243,15 +252,15 @@ class SendSmsRequestRouteTests {
                                         .build())
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
-                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                                 .configuration(null).tags(null).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() throws Exception {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
                         }
@@ -261,6 +270,7 @@ class SendSmsRequestRouteTests {
     @Test
     void sendSmsRoute_then_assert_exchange_where_policy_tags_match_smpp_connection() throws Exception {
         String destination = "25884XXX0001";
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry(
                 (b) -> b.id(UUID.randomUUID().toString())
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
@@ -278,15 +288,15 @@ class SendSmsRequestRouteTests {
                                         .build())
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
-                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                                 .configuration(null).tags(Map.of("Tag", "Tag")).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
                         }
@@ -295,8 +305,9 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRoute_then_assert_exchange_where_sms_request_tags_match_policy() throws Exception {
-        Map<String, String> tags = Map.of("Tag", UUID.randomUUID().toString());
         String destination = "25884XXX0001";
+        String alias = UUID.randomUUID().toString();
+        Map<String, String> tags = Map.of("Tag", UUID.randomUUID().toString());
         sendSmsRequest_then_assert_message_is_sent_when_one_retry(
                 (b) -> b.id(UUID.randomUUID().toString())
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi")
@@ -314,15 +325,15 @@ class SendSmsRequestRouteTests {
                                         .build())
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
-                        SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                        SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                                 .configuration(null).tags(null).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).end()
+                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
                         }
@@ -331,6 +342,7 @@ class SendSmsRequestRouteTests {
 
     @Test
     void sendSmsRoute_then_catch_exception_thrown_by_smpp_connection() throws Exception {
+        String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_exception_is_thrown((from, smpp) -> new PolicyDefinition[]{
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
@@ -344,22 +356,25 @@ class SendSmsRequestRouteTests {
                                 .build())
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
-                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                         .configuration(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                .throwException(new IllegalStateException()).end()
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                .throwException(new IllegalStateException()).routeId("smpp_connection").end()
                         ;
                     }
                 }
         }, (builder) -> builder.expectedExceptionType(CannotSendSmsRequestException.class));
     }
+
     @Test
     void sendSmsRoute_then_catch_exception_thrown_by_smpp_connection_but_another_can_send() throws Exception {
+        String alias = UUID.randomUUID().toString();
+        String secondarySmppId = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
                 PolicyDefinition.builder().id("test").version("latest")
                         .spec(PolicyDefinition.Spec.builder()
@@ -369,23 +384,23 @@ class SendSmsRequestRouteTests {
                                                 PolicyDefinition.ResourceDefinition.builder()
                                                         .id(smpp).build(),
                                                 PolicyDefinition.ResourceDefinition.builder()
-                                                        .id("tmz").build()
+                                                        .id(secondarySmppId).build()
                                         )
                                 )
                                 .build())
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
-                SmppConnectionDefinition.builder().id(smpp).name("vmz").alias("vmz").description(null)
+                SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
                         .configuration(null).tags(null).build(),
-                SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
+                SmppConnectionDefinition.builder().id(secondarySmppId).name(secondarySmppId).alias(secondarySmppId).description(null)
                         .configuration(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "VMZ"))
-                                .throwException(new IllegalStateException()).end()
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                .throwException(new IllegalStateException()).routeId("smpp_connection").end()
                         ;
                     }
                 },
@@ -393,8 +408,8 @@ class SendSmsRequestRouteTests {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "TMZ"))
-                                .setHeader("WAS_ACKNOWLEDGED", constant(true)).end()
+                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, secondarySmppId.toUpperCase()))
+                                .setHeader("WAS_ACKNOWLEDGED", constant(true)).routeId("smpp_connection_1").end()
                         ;
                     }
                 }
