@@ -26,7 +26,7 @@ public class SendSmsRequestAsyncRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, "Pulling message from Channel{\"name\":\"SEND_SMS_REQUEST\"}")
                 .unmarshal()
                     .json(JsonLibrary.Jackson, SendSmsRequest.class)
-                .to(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_ROUTE)
+                .to(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE)
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
     }

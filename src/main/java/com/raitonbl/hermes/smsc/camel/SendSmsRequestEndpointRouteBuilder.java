@@ -11,20 +11,19 @@ import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
 import org.apache.camel.component.jsonvalidator.JsonValidationException;
 import org.apache.camel.model.dataformat.JsonLibrary;
-import org.apache.camel.model.dataformat.YAMLLibrary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 
+import java.util.Optional;
+
 @Component
 public class SendSmsRequestEndpointRouteBuilder extends RouteBuilder {
-    public static final String POST_SMS_REQUEST_ENDPOINT_ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX +"_HTTP_PUT_RULES";
     private static final String CREATE_OPERATION_ID = "sendSmsRequest";
     private static final String OPERATION_ROOT_PATH = "/short-messages";
     private PolicyConfiguration configuration;
@@ -34,33 +33,41 @@ public class SendSmsRequestEndpointRouteBuilder extends RouteBuilder {
         if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
             return;
         }
-        addPutOperationRoute();
+        addSubmitSmsRequestRoute();
     }
 
-    public void addPutOperationRoute() {
+    public void addSubmitSmsRequestRoute() {
         from("rest:POST:" + OPERATION_ROOT_PATH + "?produces=" + MediaType.APPLICATION_JSON_VALUE)
-                .routeId(POST_SMS_REQUEST_ENDPOINT_ROUTE_ID)
+                .routeId(HermesSystemConstants.SEND_SMS_THROUGH_HTTP_INTERFACE)
                 .doTry()
                     .choice()
                         .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.APPLICATION_JSON_VALUE))
-                            .log(LoggingLevel.DEBUG, "POST "+OPERATION_ROOT_PATH+" has Content-Type=" + MediaType.APPLICATION_JSON_VALUE)
+                            .log(LoggingLevel.DEBUG, "POST " + OPERATION_ROOT_PATH + " has Content-Type=" + MediaType.APPLICATION_JSON_VALUE)
                         .otherwise()
                             .throwException(new HttpMediaTypeNotSupportedException("MediaType doesnt match" + MediaType.APPLICATION_JSON_VALUE))
                     .end()
                     .convertBodyTo(String.class)
                     .to("json-validator:classpath:schemas/short-message.json?contentCache=true&failOnNullBody=true")
                     .unmarshal().json(JsonLibrary.Jackson, HttpSendSmsRequest.class)
-                    .process(this::beforeSending)
                     .choice()
-                        .when(header(HermesConstants.SMPP_CONNECTION).isNotNull())
-                            .toD(String.format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT,"${headers." + HermesConstants.SMPP_CONNECTION + ".alias.toUpperCase()}"))
+                        .when(simple("{body.smppConnection}").isNotNull())
+                            .enrich(HermesSystemConstants.DIRECT_TO_FIND_SMPP_CONNECTION_BY_ID, (original, fromComponent) -> {
+                                Optional.ofNullable(fromComponent.getIn().getBody())
+                                        .ifPresent(definition -> original.getIn()
+                                                .setHeader(HermesConstants.SMPP_CONNECTION, definition));
+                                return original;
+                            })
+                            .choice()
+                                .when(header(HermesConstants.SMPP_CONNECTION).isNull())
+                                    .throwException(SmppConnectionNotFoundException.class, "{body.smppConnection}")
+                            .endChoice()
+                            .toD(String.format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "${headers." + HermesConstants.SMPP_CONNECTION + ".alias.toUpperCase()}"))
                         .otherwise()
-                            .to(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_ROUTE)
+                            .to(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE)
                     .endChoice()
-                    .removeHeaders("*")
                     .setBody(simple(null))
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.NO_CONTENT.value()))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_JSON_VALUE))
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.NO_CONTENT.value()))
                 .endDoTry()
                 .doCatch(JsonValidationException.class)
                     .log("${exception.stacktrace}")
@@ -95,10 +102,6 @@ public class SendSmsRequestEndpointRouteBuilder extends RouteBuilder {
                     .removeHeaders("*", Exchange.HTTP_RESPONSE_CODE, Exchange.CONTENT_TYPE)
                     .marshal().json(JsonLibrary.Jackson)
                 .end();
-    }
-
-    private void beforeSending(Exchange exchange) {
-        //TODO PARSE ID TO ALIAS WHEN sendThrough as value
     }
 
     @Inject

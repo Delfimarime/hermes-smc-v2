@@ -1,6 +1,13 @@
 {
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string"
+    },
+    "from": {
+      "type": "string",
+      "minLength": 1
+    },
     "content": {
       "type": "string",
       "minLength": 1
@@ -20,7 +27,9 @@
     }
   },
   "required": [
+    "id",
     "to",
+    "from",
     "content"
   ],
   "additionalProperties": false
