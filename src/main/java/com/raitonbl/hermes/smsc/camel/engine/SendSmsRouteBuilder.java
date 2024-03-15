@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SendSmsRouteBuilder extends RouteBuilder {
 
-    private static final String EXECUTE_TROUGH_POLICY_ROUTE = HermesSystemConstants.SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE + "_EXECUTE";
+    private static final String EXECUTE_TROUGH_POLICY_ROUTE = HermesSystemConstants.SEND_MESSAGE_SYSTEM_ROUTE + "_EXECUTE";
     private static final String DIRECT_TO_EXECUTE_TROUGH_POLICY_ROUTE = "direct:" + EXECUTE_TROUGH_POLICY_ROUTE;
     public static final String RAW_BODY_HEADER = HermesConstants.HEADER_PREFIX + "SendSmsRequest";
 
@@ -20,7 +20,7 @@ public class SendSmsRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
         from(DIRECT_TO_EXECUTE_TROUGH_POLICY_ROUTE)
                 .routeId(EXECUTE_TROUGH_POLICY_ROUTE)
-                .to(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_ROUTE)
+                .to(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_SYSTEM_ROUTE)
                 .choice()
                     .when(header(HermesConstants.SMPP_CONNECTION).isNotNull())
                         .doTry()
@@ -49,8 +49,8 @@ public class SendSmsRouteBuilder extends RouteBuilder {
                     .endChoice()
                 .end();
 
-        from(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE)
-                .routeId(HermesSystemConstants.SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE)
+        from(HermesSystemConstants.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE)
+                .routeId(HermesSystemConstants.SEND_MESSAGE_SYSTEM_ROUTE)
                 .doTry()
                     .to(DIRECT_TO_EXECUTE_TROUGH_POLICY_ROUTE)
                 .doFinally()

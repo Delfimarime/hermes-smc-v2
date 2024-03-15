@@ -23,17 +23,24 @@ import java.util.stream.Collectors;
 @Component
 public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
     private static final Object LOCK = new Object();
-    public static final String CACHE_LISTENER_ROUTE = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "POLICY_CACHE_LISTENER";
+    public static final String CACHE_LISTENER_ROUTE = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "POLICY_CACHE_LISTENER";
     private static final String POLICY_CACHE = HermesConstants.HEADER_PREFIX + SmppConnectionDeciderRouteBuilder.class.getName();
-    private static final String CONSTRUCT_POLICY_CACHE_ROUTE = HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "POLICY_CACHE_FACTORY";
-    private static final String DIRECT_TO_CONSTRUCT_POLICY_CACHE_ROUTE = "direct:" + CONSTRUCT_POLICY_CACHE_ROUTE;
+    private static final String CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "POLICY_CACHE_FACTORY";
+    private static final String DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE = "direct:" + CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE;
 
     private List<Policy> cache = null;
 
     @Override
     public void configure() throws Exception {
-        from(DIRECT_TO_CONSTRUCT_POLICY_CACHE_ROUTE)
-                .routeId(CONSTRUCT_POLICY_CACHE_ROUTE)
+        from("jcache://" + PolicyRouteBuilder.CACHE_NAME + "?filteredEvents=CREATED,UPDATED,REMOVED,EXPIRED")
+                .routeId(CACHE_LISTENER_ROUTE)
+                .choice()
+                    .when(header(JCacheConstants.KEY).isEqualTo(PolicyRouteBuilder.POLICY_CACHE_KEY))
+                        .to(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
+                .end();
+
+        from(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
+                .routeId(CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
                 .enrich(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE, (original, fromComponent) -> {
                     original.getIn()
                             .setHeader(HermesConstants.POLICIES, fromComponent.getIn().getBody());
@@ -48,25 +55,18 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
                 .removeHeader(HermesConstants.POLICIES)
                 .removeHeader(HermesConstants.REPOSITORY_RETURN_OBJECT);
 
-        from(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_ROUTE)
-                .routeId(HermesSystemConstants.SMPP_DECIDER_ROUTE)
+        from(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_SYSTEM_ROUTE)
+                .routeId(HermesSystemConstants.SMPP_DECIDER_SYSTEM_ROUTE)
                 .setHeader(POLICY_CACHE, constant(cache))
                 .doTry()
                     .choice()
                         .when(header(POLICY_CACHE).isNull())
-                        .to(DIRECT_TO_CONSTRUCT_POLICY_CACHE_ROUTE)
+                        .to(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
                         .end()
                 .endDoTry()
                 .doFinally()
                     .removeHeader(POLICY_CACHE)
                 .process(this::process)
-                .end();
-
-        from("jcache://" + PolicyRouteBuilder.CACHE_NAME + "?filteredEvents=CREATED,UPDATED,REMOVED,EXPIRED")
-                .routeId(CACHE_LISTENER_ROUTE)
-                .choice()
-                    .when(header(JCacheConstants.KEY).isEqualTo(PolicyRouteBuilder.POLICY_CACHE_KEY))
-                        .to(DIRECT_TO_CONSTRUCT_POLICY_CACHE_ROUTE)
                 .end();
     }
 

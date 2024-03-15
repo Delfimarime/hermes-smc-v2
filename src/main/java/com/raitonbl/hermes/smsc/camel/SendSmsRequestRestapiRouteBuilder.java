@@ -38,7 +38,7 @@ public class SendSmsRequestRestapiRouteBuilder extends RouteBuilder {
 
     public void addSubmitSmsRequestRoute() {
         from("rest:POST:" + OPERATION_ROOT_PATH + "?produces=" + MediaType.APPLICATION_JSON_VALUE)
-                .routeId(HermesSystemConstants.SEND_SMS_THROUGH_HTTP_INTERFACE)
+                .routeId(HermesSystemConstants.SEND_MESSAGE_THROUGH_HTTP_INTERFACE)
                 .doTry()
                     .choice()
                         .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.APPLICATION_JSON_VALUE))
@@ -70,7 +70,7 @@ public class SendSmsRequestRestapiRouteBuilder extends RouteBuilder {
                             .endChoice()
                             .toD(String.format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, "${headers." + HermesConstants.SMPP_CONNECTION + ".alias.toUpperCase()}"))
                         .otherwise()
-                            .to(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE)
+                            .to(HermesSystemConstants.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE)
                     .endChoice()
                     .setBody(simple(null))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_JSON_VALUE))

@@ -528,7 +528,7 @@ class SendSmsRequestRouteTests {
                         Throwable caught;
                         do {
                             fromRoute.set(template
-                                    .request(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE,
+                                    .request(HermesSystemConstants.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE,
                                             (exchange -> exchange.getIn().setBody(sendSmsRequest))));
                             caught = fromRoute.get().getException(Exception.class);
                             if (caught == null) {
@@ -550,7 +550,7 @@ class SendSmsRequestRouteTests {
             int attempts = 1;
             Exception caught;
             do {
-                fromRoute.set(template.request(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE, (exchange -> exchange.getIn().setBody(sendSmsRequest))));
+                fromRoute.set(template.request(HermesSystemConstants.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE, (exchange -> exchange.getIn().setBody(sendSmsRequest))));
                 caught = fromRoute.get().getException(Exception.class);
                 attempts++;
             } while (attempts <= maxRetries.get());
