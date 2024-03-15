@@ -12,7 +12,7 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SendSmsRequestAsyncRouteBuilder extends RouteBuilder {
+public class SendSmsRequestAsyncapiRouteBuilder extends RouteBuilder {
     public static final String ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX +"_SEND_MESSAGE_ASYNCHRONOUSLY";
     private SendSmsListenerConfiguration configuration;
 
@@ -26,6 +26,9 @@ public class SendSmsRequestAsyncRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, "Pulling message from Channel{\"name\":\"SEND_SMS_REQUEST\"}")
                 .unmarshal()
                     .json(JsonLibrary.Jackson, SendSmsRequest.class)
+                .convertBodyTo(String.class)
+                .to("json-validator:classpath:schemas/short-message.asyncapi.json?contentCache=true&failOnNullBody=true")
+                .unmarshal().json(JsonLibrary.Jackson, SendSmsRequest.class)
                 .to(HermesSystemConstants.DIRECT_TO_SEND_SMS_REQUEST_THROUGH_ASYNC_ROUTE)
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();

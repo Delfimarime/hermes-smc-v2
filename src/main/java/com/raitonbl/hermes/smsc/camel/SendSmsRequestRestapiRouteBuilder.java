@@ -23,7 +23,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import java.util.Optional;
 
 @Component
-public class SendSmsRequestEndpointRouteBuilder extends RouteBuilder {
+public class SendSmsRequestRestapiRouteBuilder extends RouteBuilder {
     private static final String CREATE_OPERATION_ID = "sendShortMessage";
     private static final String OPERATION_ROOT_PATH = "/short-messages";
     private PolicyConfiguration configuration;
