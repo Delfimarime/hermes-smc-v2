@@ -41,7 +41,7 @@ public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
 
         from(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
                 .routeId(CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
-                .enrich(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE, (original, fromComponent) -> {
+                .enrich(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE, (original, fromComponent) -> {
                     original.getIn()
                             .setHeader(HermesConstants.POLICIES, fromComponent.getIn().getBody());
                     return original;

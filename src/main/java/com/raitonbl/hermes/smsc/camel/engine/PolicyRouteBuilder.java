@@ -64,8 +64,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void setReadRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
-        ProcessorDefinition<?> routeDefinition = from(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_ROUTE)
-                .routeId( HermesSystemConstants.READ_POLICIES_FROM_DATASOURCE_ROUTE)
+        ProcessorDefinition<?> routeDefinition = from(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+                .routeId( HermesSystemConstants.READ_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
                 .setBody(simple(null))
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
