@@ -38,14 +38,14 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
         if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
             return;
         }
-        from("rest:PUT:/rules?produces=" + MediaType.APPLICATION_JSON_VALUE)
+        from("rest:PUT:/policies?produces=" + MediaType.APPLICATION_JSON_VALUE)
                 .routeId(PUT_RULES_ENDPOINT_ROUTE_ID)
                 .doTry()
                     .choice()
                         .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.APPLICATION_JSON_VALUE))
-                            .log(LoggingLevel.DEBUG, "PUT /rules has Content-Type=" + MediaType.APPLICATION_JSON_VALUE)
+                            .log(LoggingLevel.DEBUG, "PUT /policies has Content-Type=" + MediaType.APPLICATION_JSON_VALUE)
                             .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.TEXT_PLAIN_VALUE))
-                                .log(LoggingLevel.DEBUG, "PUT /rules has Content-Type=" + MediaType.TEXT_PLAIN_VALUE)
+                                .log(LoggingLevel.DEBUG, "PUT /policies has Content-Type=" + MediaType.TEXT_PLAIN_VALUE)
                                 .unmarshal(new YAMLDataFormat()) // Unmarshal from YAML to Java object
                                 .marshal().json(JsonLibrary.Jackson)
                                 .setBody(simple("${body}"))
@@ -53,7 +53,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                             .otherwise()
                                 .throwException(new HttpMediaTypeNotSupportedException("MediaType doesnt match"+MediaType.TEXT_PLAIN_VALUE+" nor "+MediaType.APPLICATION_JSON_VALUE))
                             .end()
-                            .to("json-validator:classpath:schemas/rules.json?contentCache=true&failOnNullBody=true")
+                            .to("json-validator:classpath:schemas/policy.json?contentCache=true&failOnNullBody=true")
                             .to(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
                             .removeHeaders("*")
                             .setBody(simple(null))
@@ -76,10 +76,10 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
     }
 
     private void addGetOperationRoute() {
-        from("rest:GET:/rules")
+        from("rest:GET:/policies")
                 .routeId(GET_RULES_ENDPOINT_ROUTE_ID)
                 .doTry()
-                    .log(LoggingLevel.DEBUG, "GET /rules has Content-Type=${headers."+Exchange.CONTENT_TYPE+"}")
+                    .log(LoggingLevel.DEBUG, "GET /policies has Content-Type=${headers."+Exchange.CONTENT_TYPE+"}")
                     .choice()
                         .when(PredicateBuilder.not( header(Exchange.CONTENT_TYPE).in(MediaType.APPLICATION_JSON_VALUE,MediaType.TEXT_PLAIN_VALUE) ))
                             .throwException(new HttpMediaTypeNotSupportedException("MediaType doesn't match"+MediaType.TEXT_PLAIN_VALUE+" nor "+MediaType.APPLICATION_JSON_VALUE))

@@ -1,7 +1,6 @@
 package com.raitonbl.hermes.smsc.camel;
 
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.engine.SendSmsRouteBuilder;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.SendSmsListenerConfiguration;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
@@ -13,7 +12,7 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SendSmsAsyncRouteBuilder extends RouteBuilder {
+public class SendSmsRequestAsyncRouteBuilder extends RouteBuilder {
     public static final String ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX +"_SEND_MESSAGE_ASYNCHRONOUSLY";
     private SendSmsListenerConfiguration configuration;
 

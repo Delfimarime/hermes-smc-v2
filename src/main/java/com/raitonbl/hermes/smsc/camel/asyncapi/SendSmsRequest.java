@@ -1,15 +1,15 @@
 package com.raitonbl.hermes.smsc.camel.asyncapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Map;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SendSmsRequest {
     @JsonProperty("id")
     private String id;
