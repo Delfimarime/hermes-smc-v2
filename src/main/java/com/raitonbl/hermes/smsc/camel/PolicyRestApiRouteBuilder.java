@@ -2,6 +2,7 @@ package com.raitonbl.hermes.smsc.camel;
 
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PolicyConfiguration;
+import com.raitonbl.hermes.smsc.sdk.HermesConstants;
 import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
@@ -17,12 +18,13 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 
+import java.util.Optional;
+
 @Component
 public class PolicyRestApiRouteBuilder extends RouteBuilder {
-    public static final String GET_RULES_ENDPOINT_ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX + "_HTTP_GET_RULES";
-    public static final String PUT_RULES_ENDPOINT_ROUTE_ID = HermesSystemConstants.ROUTE_PREFIX +"_HTTP_PUT_RULES";
-    private static final String PUT_OPERATION_ID = "setRules";
-    private static final String GET_OPERATION_ID = "getRules";
+    private static final String PUT_OPERATION_ID = "SetPolicies";
+    private static final String GET_OPERATION_ID = "GetPolicies";
+    private static final String SERVER_URI = "/policies";
     private PolicyConfiguration configuration;
 
     @Override
@@ -38,14 +40,14 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
         if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
             return;
         }
-        from("rest:PUT:/policies?produces=" + MediaType.APPLICATION_JSON_VALUE)
-                .routeId(PUT_RULES_ENDPOINT_ROUTE_ID)
+        from("rest:PUT:"+SERVER_URI+"?produces=" + MediaType.APPLICATION_JSON_VALUE)
+                .routeId(HermesSystemConstants.UPDATE_POLICIES_RESTAPI_ROUTE)
                 .doTry()
                     .choice()
                         .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.APPLICATION_JSON_VALUE))
-                            .log(LoggingLevel.DEBUG, "PUT /policies has Content-Type=" + MediaType.APPLICATION_JSON_VALUE)
+                            .log(LoggingLevel.DEBUG, "PUT " + SERVER_URI + " has Content-Type=" + MediaType.APPLICATION_JSON_VALUE)
                             .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.TEXT_PLAIN_VALUE))
-                                .log(LoggingLevel.DEBUG, "PUT /policies has Content-Type=" + MediaType.TEXT_PLAIN_VALUE)
+                                .log(LoggingLevel.DEBUG, "PUT " + SERVER_URI + " has Content-Type=" + MediaType.TEXT_PLAIN_VALUE)
                                 .unmarshal(new YAMLDataFormat()) // Unmarshal from YAML to Java object
                                 .marshal().json(JsonLibrary.Jackson)
                                 .setBody(simple("${body}"))
@@ -53,6 +55,11 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                             .otherwise()
                                 .throwException(new HttpMediaTypeNotSupportedException("MediaType doesnt match"+MediaType.TEXT_PLAIN_VALUE+" nor "+MediaType.APPLICATION_JSON_VALUE))
                             .end()
+                            .enrich(HermesSystemConstants.OPENID_CONNECT_GET_AUTHENTICATION, (original, fromComponent) -> {
+                                Optional.ofNullable(fromComponent.getIn().getBody(String.class))
+                                        .ifPresent(value -> original.getIn().setHeader(HermesConstants.AUTHORIZATION, value));
+                                return original;
+                            })
                             .to("json-validator:classpath:schemas/policy.json?contentCache=true&failOnNullBody=true")
                             .to(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
                             .removeHeaders("*")
@@ -77,9 +84,9 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
 
     private void addGetOperationRoute() {
         from("rest:GET:/policies")
-                .routeId(GET_RULES_ENDPOINT_ROUTE_ID)
+                .routeId(HermesSystemConstants.GET_ALL_POLICIES_RESTAPI_ROUTE)
                 .doTry()
-                    .log(LoggingLevel.DEBUG, "GET /policies has Content-Type=${headers."+Exchange.CONTENT_TYPE+"}")
+                    .log(LoggingLevel.DEBUG, "GET "+SERVER_URI+" has Content-Type=${headers."+Exchange.CONTENT_TYPE+"}")
                     .choice()
                         .when(PredicateBuilder.not( header(Exchange.CONTENT_TYPE).in(MediaType.APPLICATION_JSON_VALUE,MediaType.TEXT_PLAIN_VALUE) ))
                             .throwException(new HttpMediaTypeNotSupportedException("MediaType doesn't match"+MediaType.TEXT_PLAIN_VALUE+" nor "+MediaType.APPLICATION_JSON_VALUE))
