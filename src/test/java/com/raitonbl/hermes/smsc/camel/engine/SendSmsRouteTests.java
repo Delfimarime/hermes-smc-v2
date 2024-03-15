@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc;
+package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
@@ -29,7 +29,7 @@ import java.util.function.Function;
 @SpringBootTest
 @CamelSpringBootTest
 @Import({TestBeanFactory.class})
-class SendSmsRequestRouteTests {
+class SendSmsRouteTests {
 
     @Autowired
     ObjectMapper objectMapper;

@@ -1,9 +1,7 @@
-package com.raitonbl.hermes.smsc;
+package com.raitonbl.hermes.smsc.camel.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.engine.PolicyRouteBuilder;
-import com.raitonbl.hermes.smsc.camel.engine.SmppRepositoryRouteBuilder;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.config.BeanFactory;
