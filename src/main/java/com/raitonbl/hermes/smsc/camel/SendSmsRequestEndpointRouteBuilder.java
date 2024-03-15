@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @Component
 public class SendSmsRequestEndpointRouteBuilder extends RouteBuilder {
-    private static final String CREATE_OPERATION_ID = "sendSmsRequest";
+    private static final String CREATE_OPERATION_ID = "sendShortMessage";
     private static final String OPERATION_ROOT_PATH = "/short-messages";
     private PolicyConfiguration configuration;
 
@@ -46,9 +46,16 @@ public class SendSmsRequestEndpointRouteBuilder extends RouteBuilder {
                         .otherwise()
                             .throwException(new HttpMediaTypeNotSupportedException("MediaType doesnt match" + MediaType.APPLICATION_JSON_VALUE))
                     .end()
+                    .enrich(HermesSystemConstants.OPENID_CONNECT_GET_AUTHENTICATION, (original, fromComponent) -> {
+                        Optional.ofNullable(fromComponent.getIn().getBody(String.class))
+                                .ifPresent(value -> original.getIn().setHeader(HermesConstants.AUTHORIZATION, value));
+                        return original;
+                    })
                     .convertBodyTo(String.class)
                     .to("json-validator:classpath:schemas/short-message.json?contentCache=true&failOnNullBody=true")
                     .unmarshal().json(JsonLibrary.Jackson, HttpSendSmsRequest.class)
+                    .process(exchange -> exchange.getIn().getBody(HttpSendSmsRequest.class)
+                            .setFrom(exchange.getIn().getHeader(HermesConstants.AUTHORIZATION, String.class)))
                     .choice()
                         .when(simple("{body.smppConnection}").isNotNull())
                             .enrich(HermesSystemConstants.DIRECT_TO_FIND_SMPP_CONNECTION_BY_ID, (original, fromComponent) -> {
@@ -89,10 +96,20 @@ public class SendSmsRequestEndpointRouteBuilder extends RouteBuilder {
                     )))
                 .doCatch(CannotDetermineTargetSmppConnectionException.class)
                     .log("${exception.stacktrace}")
-                    //TODO IMPLEMENT
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.FORBIDDEN.value()))
+                    .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+                    .setBody(ZalandoProblemDefinition.forbidden(CREATE_OPERATION_ID, (builder -> builder
+                            .detail("No Smpp Connection capable of sending such message")
+                            .type("/problems/" + CREATE_OPERATION_ID + "/cannot-determine-smpp-connection")
+                    )))
                 .doCatch(CannotSendSmsRequestException.class)
                     .log("${exception.stacktrace}")
-                    //TODO IMPLEMENT
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.FORBIDDEN.value()))
+                    .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+                    .setBody(ZalandoProblemDefinition.forbidden(CREATE_OPERATION_ID, (builder -> builder
+                            .detail("No Smpp Connection could send the message at the moment")
+                            .type("/problems/" + CREATE_OPERATION_ID + "/cannot-send-short-message")
+                    )))
                 .doCatch(Exception.class)
                     .log("${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))

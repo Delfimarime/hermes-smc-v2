@@ -17,17 +17,22 @@ import java.util.Optional;
 @Configuration
 @ConfigurationProperties(prefix = "spring.boot.hermes")
 public class HermesConfiguration {
+    private String homeDirectory;
     @NotNull
     private PublishConfiguration publishTo;
+    private PolicyConfiguration policyRepository;
     private SendSmsListenerConfiguration listenTo;
     @NotEmpty
     private Map<String, SmppConfiguration> services;
-    private PolicyConfiguration policyRepository;
-    private String homeDirectory;
+    private Boolean enableSecurityAudit;
 
-    public String getHomeDirectory(){
-        return  Optional.ofNullable(homeDirectory)
-                .or(()->Optional.ofNullable(System.getenv("HERMES_SMSC_HOME")))
+    public boolean isSecurityAuditEnabled() {
+        return Optional.ofNullable(enableSecurityAudit).orElse(false);
+    }
+
+    public String getHomeDirectory() {
+        return Optional.ofNullable(homeDirectory)
+                .or(() -> Optional.ofNullable(System.getenv("HERMES_SMSC_HOME")))
                 .orElse("./");
     }
 
