@@ -45,12 +45,11 @@ public class RepositoryRouteBuilder extends RouteBuilder {
 
                 if(Provider.FILESYSTEM.equals(configuration.getType())){
                      route.process(this::setConsumerHeaders)
-                            .pollEnrich(configuration.toConsumerURI(), new GroupedBodyAggregationStrategy());
+                            .pollEnrich(configuration.toConsumerURI(),3000);
                 }
 
-               route.onException(UnsupportedOperationException.class)
-                    .handled(Boolean.TRUE)
-                    .setBody(simple(null))
+               route.onException(UnsupportedOperationException.class).setBody(simple(null)).handled(Boolean.TRUE)
+                   //
                 .end();
     }
 
