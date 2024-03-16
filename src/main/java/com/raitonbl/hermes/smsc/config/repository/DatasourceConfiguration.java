@@ -11,20 +11,17 @@ import java.util.stream.Stream;
 
 @Data
 @Builder
-public class RepositoryConfiguration {
+public class DatasourceConfiguration {
     private Provider type;
     // Credentials
     private String username;
     private String password;
     private AuthenticationType authenticationType;
-
     // FILESYSTEM
     private Integer queueSize;
     private Integer pollThreads;
     private Integer numberOfConcurrentConsumers;
-
     // ETCD Specifics
-    private String prefix;
     private String[] endpoint;
     private String namespace;
     private Integer fromIndex;
@@ -35,6 +32,7 @@ public class RepositoryConfiguration {
     private Integer retryMaxDelay;
     private Integer retryMaxDuration;
     private String servicePath;
+    private String prefix;
 
     // COMMON
     private String path;
@@ -94,13 +92,14 @@ public class RepositoryConfiguration {
     private String getFilesystemConsumerURI() {
         AtomicBoolean isFirst = new AtomicBoolean(true);
         StringBuilder sb = new StringBuilder();
-        sb.append("fileName://").append(Optional.ofNullable(this.path).orElseGet(() -> {
+        sb.append("file://").append(Optional.ofNullable(this.path).orElseGet(() -> {
             return Optional.ofNullable(System.getenv("HERMES_HOME"))
                     .map(value -> StringUtils.endsWith(value, "/") ? value : value + "/")
-                    .map(value -> value + "config").orElse("./config");
+                    .map(value -> value + "config").orElse("./data");
         }));
-        ConfigurationUtils.setParameter(sb, isFirst, "readLock", Boolean.TRUE);
+        ConfigurationUtils.setParameter(sb, isFirst, "noop", Boolean.TRUE);
         ConfigurationUtils.setParameter(sb, isFirst, "recursive", Boolean.TRUE);
+        ConfigurationUtils.setParameter(sb, isFirst, "allowNullBody", Boolean.TRUE);
         ConfigurationUtils.setParameter(sb, isFirst, "directoryMustExist", Boolean.TRUE);
         return sb.toString();
     }
@@ -111,7 +110,7 @@ public class RepositoryConfiguration {
         ConfigurationUtils.setParameter(sb, isFirst, "forceWrites", Boolean.TRUE);
         ConfigurationUtils.setParameter(sb, isFirst, "fileExist", "Override");
         ConfigurationUtils.setParameter(sb, isFirst, "renameUsingCopy", Boolean.TRUE);
-        return sb.toString();
+        return sb.toString().replace("noop=true", "");
     }
 
     private String getEtcdConsumerURI() {

@@ -13,5 +13,8 @@ public interface HermesConstants {
     String AUTHORIZATION_TOKEN = "Authorization";
     String AUTHORIZATION = HEADER_PREFIX + AUTHORIZATION_TOKEN;
 
-
+    String OBJECT_TYPE = HEADER_PREFIX + "ObjectType";
+    String POLICY_OBJECT_TYPE = HEADER_PREFIX + "PolicyObject";
+    String SMPP_CONNECTION_OBJECT_TYPE = HEADER_PREFIX + "SmppConnectionObject";
+    String TARGET = HEADER_PREFIX + "Target";
 }

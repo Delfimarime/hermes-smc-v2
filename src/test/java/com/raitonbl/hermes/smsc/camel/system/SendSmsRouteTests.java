@@ -36,10 +36,8 @@ class SendSmsRouteTests {
 
     @Autowired
     HermesConfiguration configuration;
-
     @Autowired
     ProducerTemplate template;
-
     @Autowired
     CamelContext context;
 

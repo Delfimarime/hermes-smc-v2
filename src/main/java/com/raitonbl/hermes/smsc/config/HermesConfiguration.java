@@ -1,6 +1,7 @@
 package com.raitonbl.hermes.smsc.config;
 
 
+import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
 import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +26,7 @@ public class HermesConfiguration {
     @NotEmpty
     private Map<String, SmppConfiguration> services;
     private Boolean enableSecurityAudit;
+    private DatasourceConfiguration datasource;
 
     public boolean isSecurityAuditEnabled() {
         return Optional.ofNullable(enableSecurityAudit).orElse(false);
