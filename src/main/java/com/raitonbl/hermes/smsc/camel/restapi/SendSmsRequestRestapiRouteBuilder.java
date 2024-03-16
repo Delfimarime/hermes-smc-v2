@@ -28,7 +28,6 @@ public class SendSmsRequestRestapiRouteBuilder extends RouteBuilder {
     private static final String CREATE_OPERATION_ID = "sendShortMessage";
     private static final String OPERATION_ROOT_PATH = "/short-messages";
     private PolicyConfiguration configuration;
-
     @Override
     public void configure() {
         if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
@@ -42,10 +41,8 @@ public class SendSmsRequestRestapiRouteBuilder extends RouteBuilder {
                 .routeId(HermesSystemConstants.SEND_MESSAGE_THROUGH_HTTP_INTERFACE)
                 .doTry()
                     .choice()
-                        .when(header(Exchange.CONTENT_TYPE).isEqualTo(MediaType.APPLICATION_JSON_VALUE))
-                            .log(LoggingLevel.DEBUG, "POST " + OPERATION_ROOT_PATH + " has Content-Type=" + MediaType.APPLICATION_JSON_VALUE)
-                        .otherwise()
-                            .throwException(new HttpMediaTypeNotSupportedException("MediaType doesnt match" + MediaType.APPLICATION_JSON_VALUE))
+                        .when(header(Exchange.CONTENT_TYPE).isNotEqualTo(MediaType.APPLICATION_JSON_VALUE))
+                            .throwException(new HttpMediaTypeNotSupportedException("MediaType doesn't match" + MediaType.APPLICATION_JSON_VALUE))
                     .end()
                     .enrich(HermesSystemConstants.OPENID_CONNECT_GET_AUTHENTICATION, (original, fromComponent) -> {
                         Optional.ofNullable(fromComponent.getIn().getBody(String.class))
