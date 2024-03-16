@@ -1,9 +1,9 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
+import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.config.policy.CannotSendSmsRequestException;
-import com.raitonbl.hermes.smsc.sdk.HermesConstants;
 import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectionException;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;

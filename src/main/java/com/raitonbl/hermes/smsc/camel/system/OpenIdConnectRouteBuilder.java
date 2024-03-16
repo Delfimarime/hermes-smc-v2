@@ -1,10 +1,10 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
-import com.raitonbl.hermes.smsc.sdk.HermesConstants;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;

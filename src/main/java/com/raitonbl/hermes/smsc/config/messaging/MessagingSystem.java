@@ -1,6 +1,6 @@
 package com.raitonbl.hermes.smsc.config.messaging;
 
-import com.raitonbl.hermes.smsc.sdk.ConfigurationUtils;
+import com.raitonbl.hermes.smsc.config.ConfigurationUtils;
 import lombok.Getter;
 import lombok.Setter;
 

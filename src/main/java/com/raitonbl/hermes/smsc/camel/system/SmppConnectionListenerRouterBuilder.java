@@ -1,11 +1,11 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.ReceivedSmsRequest;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SmsDeliveryReceipt;
-import com.raitonbl.hermes.smsc.sdk.HermesConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;

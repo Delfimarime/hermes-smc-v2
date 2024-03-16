@@ -1,9 +1,10 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.restapi;
 
+import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PolicyConfiguration;
-import com.raitonbl.hermes.smsc.sdk.HermesConstants;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -57,6 +58,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                                 return original;
                             })
                             .to("json-validator:classpath:schemas/policy.json?contentCache=true&failOnNullBody=true")
+                            .unmarshal().json(JsonLibrary.Jackson, PolicyDefinition[].class)
                             .to(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
                             .removeHeaders("*")
                             .setBody(simple(null))

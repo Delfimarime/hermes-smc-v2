@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PublishConfiguration;

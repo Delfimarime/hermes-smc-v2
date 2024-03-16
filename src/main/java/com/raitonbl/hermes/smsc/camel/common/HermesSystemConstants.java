@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.sdk;
+package com.raitonbl.hermes.smsc.camel.common;
 
 
 public interface HermesSystemConstants {
@@ -31,7 +31,6 @@ public interface HermesSystemConstants {
     String DIRECT_TO_GET_ALL_SMPP_CONNECTIONS_ROUTE = "direct:" + GET_ALL_SMPP_CONNECTIONS_ROUTE;
     String FIND_SMPP_CONNECTION_BY_ID = GET_ALL_SMPP_CONNECTIONS_ROUTE + "%s_FIND_BY_ID";
     String DIRECT_TO_FIND_SMPP_CONNECTION_BY_ID = "direct:" + FIND_SMPP_CONNECTION_BY_ID;
-
 
     // POLICY ROUTES(S)
     String READ_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE = SYSTEM_ROUTE_PREFIX + "POLICY_READ";

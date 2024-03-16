@@ -1,13 +1,14 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.restapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.raitonbl.hermes.smsc.camel.system.SmppConnectionNotFoundException;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PolicyConfiguration;
 import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.policy.CannotSendSmsRequestException;
-import com.raitonbl.hermes.smsc.sdk.HermesConstants;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;

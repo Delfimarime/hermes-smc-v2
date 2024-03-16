@@ -1,9 +1,8 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.asyncapi;
 
-import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.SendSmsListenerConfiguration;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;

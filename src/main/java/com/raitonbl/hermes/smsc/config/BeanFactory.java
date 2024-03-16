@@ -1,6 +1,6 @@
 package com.raitonbl.hermes.smsc.config;
 
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.camel.model.language.SimpleExpression;

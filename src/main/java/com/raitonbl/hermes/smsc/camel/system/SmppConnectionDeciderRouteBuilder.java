@@ -1,10 +1,10 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
-import com.raitonbl.hermes.smsc.sdk.HermesConstants;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.camel.Exchange;

@@ -1,7 +1,7 @@
 package com.raitonbl.hermes.smsc.config.smpp;
 
 import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
-import com.raitonbl.hermes.smsc.sdk.ConfigurationUtils;
+import com.raitonbl.hermes.smsc.config.ConfigurationUtils;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.camel.component.smpp.SmppSplittingPolicy;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 

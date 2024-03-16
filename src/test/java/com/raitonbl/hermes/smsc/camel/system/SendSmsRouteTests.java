@@ -1,13 +1,13 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectionException;
 import com.raitonbl.hermes.smsc.config.policy.CannotSendSmsRequestException;
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
 import lombok.Builder;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;

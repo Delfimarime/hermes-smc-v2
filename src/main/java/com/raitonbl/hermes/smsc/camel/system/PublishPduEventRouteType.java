@@ -1,6 +1,6 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
-import com.raitonbl.hermes.smsc.sdk.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 
 public enum PublishPduEventRouteType {
     DELIVERY_RECEIPT_ROUTE(HermesSystemConstants.SYSTEM_ROUTE_PREFIX + "DELIVERY_RECEIPT_LISTENER", "DELIVERY RECEIPT"),

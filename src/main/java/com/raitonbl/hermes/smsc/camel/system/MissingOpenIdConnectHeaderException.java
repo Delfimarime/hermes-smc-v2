@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.engine;
+package com.raitonbl.hermes.smsc.camel.system;
 
 public class MissingOpenIdConnectHeaderException extends OpenIdConnectException{
     public MissingOpenIdConnectHeaderException() {

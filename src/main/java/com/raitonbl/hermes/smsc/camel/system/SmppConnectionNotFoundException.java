@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel;
+package com.raitonbl.hermes.smsc.camel.system;
 
 public class SmppConnectionNotFoundException extends RuntimeException {
     public SmppConnectionNotFoundException() {

@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.sdk;
+package com.raitonbl.hermes.smsc.config;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;

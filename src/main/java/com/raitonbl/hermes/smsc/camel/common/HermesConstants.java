@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.sdk;
+package com.raitonbl.hermes.smsc.camel.common;
 
 public interface HermesConstants {
     String HEADER_PREFIX = "CamelHermes";

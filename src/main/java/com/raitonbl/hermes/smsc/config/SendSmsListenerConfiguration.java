@@ -1,6 +1,5 @@
 package com.raitonbl.hermes.smsc.config;
 
-import com.raitonbl.hermes.smsc.sdk.ConfigurationUtils;
 import com.raitonbl.hermes.smsc.config.messaging.MessageSystemType;
 import com.raitonbl.hermes.smsc.config.messaging.MessagingSystem;
 import jakarta.validation.constraints.NotNull;
