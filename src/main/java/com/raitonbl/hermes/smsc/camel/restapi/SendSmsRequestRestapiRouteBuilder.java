@@ -11,7 +11,6 @@ import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
 import org.apache.camel.component.jsonvalidator.JsonValidationException;
