@@ -26,7 +26,6 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
     private static final String GET_OPERATION_ID = "GetPolicies";
     private static final String SERVER_URI = "/policies";
     private PolicyConfiguration configuration;
-
     @Override
     public void configure() {
         if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
@@ -37,10 +36,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
     }
 
     public void addPutOperationRoute() {
-        if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
-            return;
-        }
-        from("rest:PUT:"+SERVER_URI+"?produces=" + MediaType.APPLICATION_JSON_VALUE)
+        from("rest:PUT:" + SERVER_URI + "?produces=" + MediaType.APPLICATION_JSON_VALUE)
                 .routeId(HermesSystemConstants.UPDATE_POLICIES_RESTAPI_ROUTE)
                 .doTry()
                     .choice()
@@ -83,7 +79,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
     }
 
     private void addGetOperationRoute() {
-        from("rest:GET:/policies")
+        from("rest:GET:" + SERVER_URI + "?produces=" + MediaType.APPLICATION_JSON_VALUE)
                 .routeId(HermesSystemConstants.GET_ALL_POLICIES_RESTAPI_ROUTE)
                 .doTry()
                     .log(LoggingLevel.DEBUG, "GET "+SERVER_URI+" has Content-Type=${headers."+Exchange.CONTENT_TYPE+"}")
