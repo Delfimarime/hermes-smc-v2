@@ -1,28 +1,39 @@
 package com.raitonbl.hermes.smsc.camel.system.smpp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
+import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.Provider;
+import io.etcd.jetcd.ByteSequence;
+import io.etcd.jetcd.KeyValue;
+import io.etcd.jetcd.kv.GetResponse;
+import lombok.Builder;
+import lombok.Getter;
 import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.etcd3.Etcd3Constants;
-import org.apache.camel.component.file.FileConstants;
-import org.apache.camel.processor.aggregate.GroupedBodyAggregationStrategy;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import static org.apache.camel.support.builder.PredicateBuilder.not;
+import java.nio.charset.Charset;
+
 import static org.apache.camel.support.builder.PredicateBuilder.or;
 
 @Component
 public class RepositoryRouteBuilder extends RouteBuilder {
+    private static final TypeOpts SMPP_CONNECTION_TYPE_OPTS = TypeOpts.builder()
+            .prefix("smpp").returnType(SmppConnectionDefinition.class).build();
+    private static final TypeOpts POLICIES_TYPE_OPTS = TypeOpts.builder()
+            .prefix("policies").returnType(PolicyDefinition.class).build();
+
+    private ObjectMapper  objectMapper;
     private DatasourceConfiguration configuration;
-
-    private static final String POLICIES_SUFFIX="POLICIES";
-    private static final String SMPP_CONNECTIONS_SUFFIX="SMPP_CONNECTIONS";
-
     @Override
     public void configure() throws Exception {
         if (configuration == null) {
@@ -34,48 +45,63 @@ public class RepositoryRouteBuilder extends RouteBuilder {
     private void initReadRoute() {
         var route = from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL)
                 .routeId(HermesSystemConstants.REPOSITORY_FIND_ALL)
-                .choice()
-                .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.POLICY_OBJECT_TYPE))
-                    .setHeader(HermesConstants.TARGET,simple("POLICIES"))
-                .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.SMPP_CONNECTION_OBJECT_TYPE))
-                    .setHeader(HermesConstants.TARGET,simple("SMPP_CONNECTIONS"))
-                .otherwise()
-                    .throwException(IllegalArgumentException.class, "${headers." + HermesConstants.OBJECT_TYPE + "} isn't supported")
-                .end();
+                .doTry()
+                    .choice()
+                    .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.POLICY_OBJECT_TYPE))
+                        .setHeader(HermesConstants.TARGET, constant(POLICIES_TYPE_OPTS))
+                    .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.SMPP_CONNECTION_OBJECT_TYPE))
+                        .setHeader(HermesConstants.TARGET, constant(SMPP_CONNECTION_TYPE_OPTS))
+                    .otherwise()
+                        .throwException(IllegalArgumentException.class, "${headers." + HermesConstants.OBJECT_TYPE + "} isn't supported")
+                    .end()
+                    .setHeader(Etcd3Constants.ETCD_IS_PREFIX, constant(Boolean.TRUE))
+                    .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_GET))
+                    .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
+                    .setHeader(Etcd3Constants.ETCD_PATH, simple("${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.TARGET + ".prefix}"));
 
-                if(Provider.FILESYSTEM.equals(configuration.getType())){
-                     route.process(this::setConsumerHeaders)
-                            .pollEnrich(configuration.toConsumerURI(),3000);
+                if(Provider.ETCD.equals(configuration.getType())){
+                    route.enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                        GetResponse response = fromEnrich.getIn().getBody(GetResponse.class);
+                        String content = response.getKvs().stream().map(KeyValue::getValue)
+                                .map(ByteSequence::toString).reduce((acc, v) -> acc + "," + v)
+                                .map(v -> "[" + v + "]").orElse("[]");
+                        original.getIn().setBody(content);
+                        return original;
+                    });
                 }
 
-               route.onException(UnsupportedOperationException.class).setBody(simple(null)).handled(Boolean.TRUE)
-                   //
-                .end();
+                route.process(this::parse)
+                .endDoTry()
+                .doCatch(UnsupportedOperationException.class)
+                .setBody(simple(null))
+                .doFinally()
+                .removeHeaders(
+                        HermesConstants.TARGET + "|" + Etcd3Constants.ETCD_IS_PREFIX + "|" +
+                                Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
+                );
     }
 
-    private void setConsumerHeaders(Exchange exchange) {
-        switch (configuration.getType()) {
-            case ETCD -> {
-                exchange.getIn().setHeader(Etcd3Constants.ETCD_IS_PREFIX,Boolean.TRUE);
-                exchange.getIn().setHeader(Etcd3Constants.ETCD_ACTION, Etcd3Constants.ETCD_KEYS_ACTION_GET);
-                exchange.getIn().setHeader(Etcd3Constants.ETCD_PATH, configuration.getPath() + "/" + getObjectTypePrefix(exchange));
-            }
-            case FILESYSTEM -> exchange.getIn().setHeader(FileConstants.FILE_NAME, getObjectTypePrefix(exchange));
-            default -> throw new UnsupportedOperationException();
-        }
-    }
-
-    private String getObjectTypePrefix(Exchange exchange) {
-        return switch (exchange.getIn().getHeader(HermesConstants.OBJECT_TYPE, String.class)) {
-            case HermesConstants.POLICY_OBJECT_TYPE -> "policies/";
-            case HermesConstants.SMPP_CONNECTION_OBJECT_TYPE -> "smpp/";
-            default -> throw new UnsupportedOperationException();
-        };
+    private void parse(Exchange exchange) throws Exception{
+        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, TypeOpts.class);
+        var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.returnType.arrayType());
+        exchange.getIn().setBody(returnObject);
     }
 
     @Autowired
     public void setConfiguration(HermesConfiguration configuration) {
         this.configuration = configuration.getDatasource();
+    }
+
+    @Autowired
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @Getter
+    @Builder
+    private static final class TypeOpts {
+        private String prefix;
+        private Class<?> returnType;
     }
 
 }

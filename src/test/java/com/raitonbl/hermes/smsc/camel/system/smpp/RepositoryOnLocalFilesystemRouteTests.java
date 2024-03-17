@@ -19,9 +19,10 @@ import java.util.Optional;
 @CamelSpringBootTest
 @Import({TestBeanFactory.class})
 @TestPropertySource(properties = {
-        "spring.boot.hermes.datasource.path=./dist/data",
-        "spring.boot.hermes.datasource.type=filesystem",
-
+        "spring.boot.hermes.datasource.type=etcd",
+        "spring.boot.hermes.datasource.prefix=/hermes/smsc",
+        "spring.boot.hermes.datasource.endpoint=http://localhost:2379",
+        "spring.boot.hermes.datasource.authentication-type=none"
 })
 public class RepositoryOnLocalFilesystemRouteTests {
 
@@ -41,7 +42,7 @@ public class RepositoryOnLocalFilesystemRouteTests {
                 )
         );
 
-        if(fromRequest.getException()!=null){
+        if (fromRequest.getException() != null) {
             throw fromRequest.getException();
         }
 

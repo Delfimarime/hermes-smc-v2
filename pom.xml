@@ -150,6 +150,12 @@
             <artifactId>camel-etcd3</artifactId>
             <version>${camel.version}</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.1.0-jre</version>
+        </dependency>
         <!-- Apache Camel -->
         <dependency>
             <groupId>org.ehcache</groupId>
