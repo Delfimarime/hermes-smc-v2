@@ -14,16 +14,10 @@ import io.etcd.jetcd.kv.GetResponse;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.etcd3.Etcd3Constants;
-import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.nio.charset.Charset;
-
-import static org.apache.camel.support.builder.PredicateBuilder.or;
 
 @Component
 public class RepositoryRouteBuilder extends RouteBuilder {
