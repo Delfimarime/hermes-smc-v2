@@ -32,11 +32,11 @@ public class RepositoryRouteBuilder extends RouteBuilder {
         if (configuration == null || !Provider.ETCD.equals(configuration.getType())) {
             return;
         }
-        initGetAllRoute();
-        initGetByIdRoute();
+        initFindAllRoute();
+        initFindByIdRoute();
     }
 
-    private void initGetAllRoute() {
+    private void initFindAllRoute() {
             from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL)
                 .routeId(HermesSystemConstants.REPOSITORY_FIND_ALL)
                 .doTry()
@@ -71,7 +71,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                 );
     }
 
-    private void initGetByIdRoute() {
+    private void initFindByIdRoute() {
         from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_BY_ID)
                 .routeId(HermesSystemConstants.REPOSITORY_FIND_BY_ID)
                 .choice()
