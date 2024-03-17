@@ -17,4 +17,7 @@ public interface HermesConstants {
     String POLICY_OBJECT_TYPE = HEADER_PREFIX + "PolicyObject";
     String SMPP_CONNECTION_OBJECT_TYPE = HEADER_PREFIX + "SmppConnectionObject";
     String TARGET = HEADER_PREFIX + "Target";
+    String ENTITY_ID = HEADER_PREFIX + "EntityId";
+    String ENTITY_VERSION = HEADER_PREFIX + "EntityVersion";
+
 }

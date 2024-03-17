@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.system.smpp;
+package com.raitonbl.hermes.smsc.camel.system;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
@@ -29,14 +29,15 @@ public class RepositoryRouteBuilder extends RouteBuilder {
     private DatasourceConfiguration configuration;
     @Override
     public void configure() throws Exception {
-        if (configuration == null || Provider.ETCD.equals(configuration.getType())) {
+        if (configuration == null || !Provider.ETCD.equals(configuration.getType())) {
             return;
         }
-        initReadRoute();
+        initGetAllRoute();
+        initGetByIdRoute();
     }
 
-    private void initReadRoute() {
-        var route = from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL)
+    private void initGetAllRoute() {
+            from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL)
                 .routeId(HermesSystemConstants.REPOSITORY_FIND_ALL)
                 .doTry()
                     .choice()
@@ -59,7 +60,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                         original.getIn().setBody(content);
                         return original;
                     })
-                    .process(this::parse)
+                    .process(this::parseCollection)
                 .endDoTry()
                 .doCatch(UnsupportedOperationException.class)
                     .setBody(simple(null))
@@ -70,9 +71,60 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                 );
     }
 
-    private void parse(Exchange exchange) throws Exception{
+    private void initGetByIdRoute() {
+        from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_BY_ID)
+                .routeId(HermesSystemConstants.REPOSITORY_FIND_BY_ID)
+                .choice()
+                    .when(header(HermesConstants.ENTITY_ID).isNull())
+                        .setBody(simple(null))
+                    .otherwise()
+                        .doTry()
+                            .choice()
+                                .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.POLICY_OBJECT_TYPE))
+                                    .setHeader(HermesConstants.TARGET, constant(POLICIES_TYPE_OPTS))
+                                .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.SMPP_CONNECTION_OBJECT_TYPE))
+                                    .setHeader(HermesConstants.TARGET, constant(SMPP_CONNECTION_TYPE_OPTS))
+                                .otherwise()
+                                    .throwException(IllegalArgumentException.class, "${headers." + HermesConstants.OBJECT_TYPE + "} isn't supported")
+                            .end()
+                            .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_GET))
+                            .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
+                            .setHeader(Etcd3Constants.ETCD_PATH, simple("${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.TARGET + ".prefix}/${headers." + HermesConstants.ENTITY_ID + "}"))
+                            .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                                GetResponse response = fromEnrich.getIn().getBody(GetResponse.class);
+                                if(response.getKvs().isEmpty()){
+                                    original.getIn().setBody(null);
+                                    return original;
+                                }
+                                KeyValue kv = response.getKvs().getFirst();
+                                original.getIn().setBody(kv.getValue().toString());
+                                original.getIn().setHeader(HermesConstants.ENTITY_VERSION, kv.getVersion());
+                                return original;
+                            })
+                            .process(this::parseSingleValue)
+                        .endDoTry()
+                        .doCatch(UnsupportedOperationException.class)
+                        .setBody(simple(null))
+                        .doFinally()
+                        .removeHeaders(
+                                HermesConstants.TARGET + "|" + Etcd3Constants.ETCD_IS_PREFIX + "|" +
+                                        Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
+                        )
+                .end();
+    }
+
+    private void parseCollection(Exchange exchange) throws Exception{
         var opts = exchange.getIn().getHeader(HermesConstants.TARGET, TypeOpts.class);
         var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.returnType.arrayType());
+        exchange.getIn().setBody(returnObject);
+    }
+
+    private void parseSingleValue(Exchange exchange) throws Exception{
+        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, TypeOpts.class);
+        var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.returnType);
+        if (returnObject instanceof  Versioned){
+            ((Versioned) returnObject).setVersion(exchange.getIn().getHeader(HermesConstants.ENTITY_VERSION, Long.class));
+        }
         exchange.getIn().setBody(returnObject);
     }
 

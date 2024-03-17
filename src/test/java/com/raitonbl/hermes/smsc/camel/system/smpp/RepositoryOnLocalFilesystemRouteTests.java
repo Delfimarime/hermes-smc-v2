@@ -34,9 +34,10 @@ public class RepositoryOnLocalFilesystemRouteTests {
     @Test
     void run() throws Exception {
         var fromRequest = template.request(
-                HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL, (
+                HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_BY_ID, (
                         exchange -> {
                             exchange.getIn().setBody(null);
+                            exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "addcaa63-0dea-4962-a532-f4023eb1f850");
                             exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, HermesConstants.SMPP_CONNECTION_OBJECT_TYPE);
                         }
                 )

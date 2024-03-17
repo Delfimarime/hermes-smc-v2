@@ -64,7 +64,7 @@ class SendSmsRouteTests {
     void sendSmsRoute_then_assert_exchange_for_single_policy() throws Exception {
         String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
-                PolicyDefinition.builder().id("test").version("latest")
+                PolicyDefinition.builder().id("test").version(null)
                         .spec(PolicyDefinition.Spec.builder()
                                 .from(from)
                                 .resources(
@@ -96,7 +96,7 @@ class SendSmsRouteTests {
     void sendSmsRoute_then_assert_exchange_for_second_policy() throws Exception {
         String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
-                PolicyDefinition.builder().id("test").version("latest")
+                PolicyDefinition.builder().id("test").version(null)
                         .spec(PolicyDefinition.Spec.builder()
                                 .from(from)
                                 .resources(
@@ -129,7 +129,7 @@ class SendSmsRouteTests {
     void sendSmsRoute_then_assert_exchange_for_third_policy() throws Exception {
         String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
-                PolicyDefinition.builder().id("test").version("latest")
+                PolicyDefinition.builder().id("test").version(null)
                         .spec(PolicyDefinition.Spec.builder()
                                 .from(from)
                                 .resources(
@@ -164,7 +164,7 @@ class SendSmsRouteTests {
     void sendSmsRequest_when_no_matching_policies_and_throw_exception() throws Exception {
         String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_exception_is_thrown((from, smpp) -> new PolicyDefinition[]{
-                PolicyDefinition.builder().id("test").version("latest")
+                PolicyDefinition.builder().id("test").version(null)
                         .spec(PolicyDefinition.Spec.builder()
                                 .from("Ebankit")
                                 .resources(
@@ -203,7 +203,7 @@ class SendSmsRouteTests {
                 (b) -> b.id(UUID.randomUUID().toString())
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
                 (from, smpp) -> new PolicyDefinition[]{
-                        PolicyDefinition.builder().id("test").version("latest")
+                        PolicyDefinition.builder().id("test").version(null)
                                 .spec(PolicyDefinition.Spec.builder()
                                         .destination(regex)
                                         .resources(
@@ -238,7 +238,7 @@ class SendSmsRouteTests {
                 (b) -> b.id(UUID.randomUUID().toString())
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
                 (from, smpp) -> new PolicyDefinition[]{
-                        PolicyDefinition.builder().id("test").version("latest")
+                        PolicyDefinition.builder().id("test").version(null)
                                 .spec(PolicyDefinition.Spec.builder()
                                         .destination(destination)
                                         .resources(
@@ -273,7 +273,7 @@ class SendSmsRouteTests {
                 (b) -> b.id(UUID.randomUUID().toString())
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi").tags(null),
                 (from, smpp) -> new PolicyDefinition[]{
-                        PolicyDefinition.builder().id("test").version("latest")
+                        PolicyDefinition.builder().id("test").version(null)
                                 .spec(PolicyDefinition.Spec.builder()
                                         .destination(destination)
                                         .resources(
@@ -311,7 +311,7 @@ class SendSmsRouteTests {
                         .from(UUID.randomUUID().toString()).destination(destination).content("Hi")
                         .tags(tags),
                 (from, smpp) -> new PolicyDefinition[]{
-                        PolicyDefinition.builder().id("test").version("latest")
+                        PolicyDefinition.builder().id("test").version(null)
                                 .spec(PolicyDefinition.Spec.builder()
                                         .tags(tags)
                                         .resources(
@@ -342,7 +342,7 @@ class SendSmsRouteTests {
     void sendSmsRoute_then_catch_exception_thrown_by_smpp_connection() throws Exception {
         String alias = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_exception_is_thrown((from, smpp) -> new PolicyDefinition[]{
-                PolicyDefinition.builder().id("test").version("latest")
+                PolicyDefinition.builder().id("test").version(null)
                         .spec(PolicyDefinition.Spec.builder()
                                 .from(from)
                                 .resources(
@@ -374,7 +374,7 @@ class SendSmsRouteTests {
         String alias = UUID.randomUUID().toString();
         String secondarySmppId = UUID.randomUUID().toString();
         sendSmsRequest_then_assert_message_is_sent_when_one_retry((from, smpp) -> new PolicyDefinition[]{
-                PolicyDefinition.builder().id("test").version("latest")
+                PolicyDefinition.builder().id("test").version(null)
                         .spec(PolicyDefinition.Spec.builder()
                                 .from(from)
                                 .resources(
