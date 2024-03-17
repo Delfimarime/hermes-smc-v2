@@ -1,5 +1,6 @@
 package com.raitonbl.hermes.smsc.camel.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.raitonbl.hermes.smsc.camel.system.Versioned;
 import lombok.*;
@@ -11,6 +12,7 @@ import java.util.Map;
 @Data
 @Builder
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PolicyDefinition implements Versioned,Serializable {
     @JsonProperty("id")
@@ -23,6 +25,7 @@ public class PolicyDefinition implements Versioned,Serializable {
     @Data
     @Builder
     @NoArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Spec  implements Serializable{
         @JsonProperty("from")
@@ -34,10 +37,10 @@ public class PolicyDefinition implements Versioned,Serializable {
         @JsonProperty("tags")
         private Map<String, String> tags;
     }
-
     @Data
     @Builder
     @NoArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ResourceDefinition  implements Serializable{
         @JsonProperty("id")

@@ -19,6 +19,8 @@ import org.apache.camel.component.etcd3.Etcd3Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class RepositoryRouteBuilder extends RouteBuilder {
     private static final TypeOpts SMPP_CONNECTION_TYPE_OPTS = TypeOpts.builder()
@@ -34,6 +36,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
         }
         initFindAllRoute();
         initFindByIdRoute();
+        initEditByIdRoute();
     }
 
     private void initFindAllRoute() {
@@ -111,6 +114,49 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                                         Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
                         )
                 .end();
+    }
+
+    private void initEditByIdRoute() {
+        from(HermesSystemConstants.DIRECT_TO_REPOSITORY_SET_BY_ID)
+                .routeId(HermesSystemConstants.REPOSITORY_SET_BY_ID)
+                .doTry()
+                    .choice()
+                        .when(header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.POLICY_OBJECT_TYPE))
+                            .setHeader(HermesConstants.TARGET, constant(POLICIES_TYPE_OPTS))
+                        .when(header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.SMPP_CONNECTION_OBJECT_TYPE))
+                            .setHeader(HermesConstants.TARGET, constant(SMPP_CONNECTION_TYPE_OPTS))
+                        .otherwise()
+                            .throwException(IllegalArgumentException.class, "${headers." + HermesConstants.OBJECT_TYPE + "} isn't supported")
+                    .end()
+                    .choice()
+                        .when(header(HermesConstants.ENTITY_ID).isNull())
+                            .process(exchange -> {
+                                String id = ((Versioned) exchange.getIn().getBody()).getId();
+                                if (id == null) {
+                                    id = UUID.randomUUID().toString();
+                                }
+                                exchange.getIn().setHeader(HermesConstants.ENTITY_ID, id);
+                            })
+                    .end()
+                    .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
+                    .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_SET))
+                    .setHeader(Etcd3Constants.ETCD_PATH, simple("${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.TARGET + ".prefix}/${headers." + HermesConstants.ENTITY_ID + "}"))
+                    .process(exchange -> {
+                        Versioned request = exchange.getIn().getBody(Versioned.class);
+                        request.setVersion(null);
+                        request.setId(exchange.getIn().getHeader(HermesConstants.ENTITY_ID, String.class));
+                        exchange.getIn().setBody(objectMapper.writeValueAsString(request));
+                    })
+                    .to(configuration.toConsumerURI())
+                    .process(exchange -> exchange.getIn().setBody(null))
+                .endDoTry()
+                .doCatch(UnsupportedOperationException.class)
+                    .setBody(simple(null))
+                .doFinally()
+                    .removeHeaders(
+                            HermesConstants.TARGET + "|" + Etcd3Constants.ETCD_IS_PREFIX + "|" +
+                                    Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
+                    );
     }
 
     private void parseCollection(Exchange exchange) throws Exception{

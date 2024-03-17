@@ -2,6 +2,7 @@ package com.raitonbl.hermes.smsc.camel.system.smpp;
 
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.camel.system.TestBeanFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
@@ -34,10 +35,10 @@ public class RepositoryOnLocalFilesystemRouteTests {
     @Test
     void run() throws Exception {
         var fromRequest = template.request(
-                HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_BY_ID, (
+                HermesSystemConstants.DIRECT_TO_REPOSITORY_SET_BY_ID, (
                         exchange -> {
-                            exchange.getIn().setBody(null);
-                            exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "addcaa63-0dea-4962-a532-f4023eb1f850");
+                            exchange.getIn().setBody(SmppConnectionDefinition.builder().name("vcs").description("<description/>").build());
+                           // exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "addcaa63-0dea-4962-a532-f4023eb1f850");
                             exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, HermesConstants.SMPP_CONNECTION_OBJECT_TYPE);
                         }
                 )
