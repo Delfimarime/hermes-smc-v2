@@ -31,12 +31,11 @@ public class RepositoryRouteBuilder extends RouteBuilder {
             .prefix("smpp").returnType(SmppConnectionDefinition.class).build();
     private static final TypeOpts POLICIES_TYPE_OPTS = TypeOpts.builder()
             .prefix("policies").returnType(PolicyDefinition.class).build();
-
     private ObjectMapper  objectMapper;
     private DatasourceConfiguration configuration;
     @Override
     public void configure() throws Exception {
-        if (configuration == null) {
+        if (configuration == null || Provider.ETCD.equals(configuration.getType())) {
             return;
         }
         initReadRoute();
@@ -57,27 +56,23 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                     .setHeader(Etcd3Constants.ETCD_IS_PREFIX, constant(Boolean.TRUE))
                     .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_GET))
                     .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
-                    .setHeader(Etcd3Constants.ETCD_PATH, simple("${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.TARGET + ".prefix}"));
-
-                if(Provider.ETCD.equals(configuration.getType())){
-                    route.enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                    .setHeader(Etcd3Constants.ETCD_PATH, simple("${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.TARGET + ".prefix}"))
+                    .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
                         GetResponse response = fromEnrich.getIn().getBody(GetResponse.class);
                         String content = response.getKvs().stream().map(KeyValue::getValue)
                                 .map(ByteSequence::toString).reduce((acc, v) -> acc + "," + v)
                                 .map(v -> "[" + v + "]").orElse("[]");
                         original.getIn().setBody(content);
                         return original;
-                    });
-                }
-
-                route.process(this::parse)
+                    })
+                    .process(this::parse)
                 .endDoTry()
                 .doCatch(UnsupportedOperationException.class)
-                .setBody(simple(null))
+                    .setBody(simple(null))
                 .doFinally()
-                .removeHeaders(
-                        HermesConstants.TARGET + "|" + Etcd3Constants.ETCD_IS_PREFIX + "|" +
-                                Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
+                    .removeHeaders(
+                            HermesConstants.TARGET + "|" + Etcd3Constants.ETCD_IS_PREFIX + "|" +
+                                    Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
                 );
     }
 
