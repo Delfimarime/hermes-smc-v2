@@ -10,6 +10,7 @@ import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.Provider;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.KeyValue;
+import io.etcd.jetcd.kv.DeleteResponse;
 import io.etcd.jetcd.kv.GetResponse;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,6 +38,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
         initFindAllRoute();
         initFindByIdRoute();
         initEditByIdRoute();
+        initDeleteByIdRoute();
     }
 
     private void initFindAllRoute() {
@@ -157,6 +159,40 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                             HermesConstants.TARGET + "|" + Etcd3Constants.ETCD_IS_PREFIX + "|" +
                                     Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
                     );
+    }
+
+    private void initDeleteByIdRoute() {
+        from(HermesSystemConstants.DIRECT_TO_REPOSITORY_DELETE_BY_ID)
+                .routeId(HermesSystemConstants.REPOSITORY_DELETE_BY_ID)
+                .choice()
+                    .when(header(HermesConstants.ENTITY_ID).isNull())
+                        .setBody(simple(null))
+                    .otherwise()
+                    .doTry()
+                        .choice()
+                            .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.POLICY_OBJECT_TYPE))
+                                .setHeader(HermesConstants.TARGET, constant(POLICIES_TYPE_OPTS))
+                            .when( header(HermesConstants.OBJECT_TYPE).isEqualTo(HermesConstants.SMPP_CONNECTION_OBJECT_TYPE))
+                                .setHeader(HermesConstants.TARGET, constant(SMPP_CONNECTION_TYPE_OPTS))
+                            .otherwise()
+                                .throwException(IllegalArgumentException.class, "${headers." + HermesConstants.OBJECT_TYPE + "} isn't supported")
+                            .end()
+                        .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
+                        .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_DELETE))
+                        .setHeader(Etcd3Constants.ETCD_PATH, simple("${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.TARGET + ".prefix}/${headers." + HermesConstants.ENTITY_ID + "}"))
+                        .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                            original.getIn().setBody(null);
+                            return original;
+                        })
+                    .endDoTry()
+                    .doCatch(UnsupportedOperationException.class)
+                        .setBody(simple(null))
+                    .doFinally()
+                        .removeHeaders(
+                                HermesConstants.TARGET + "|" + Etcd3Constants.ETCD_IS_PREFIX + "|" +
+                                        Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
+                        )
+                .end();
     }
 
     private void parseCollection(Exchange exchange) throws Exception{

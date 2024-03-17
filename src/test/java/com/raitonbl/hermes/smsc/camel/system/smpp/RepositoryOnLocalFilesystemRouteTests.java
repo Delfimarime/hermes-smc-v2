@@ -35,10 +35,10 @@ public class RepositoryOnLocalFilesystemRouteTests {
     @Test
     void run() throws Exception {
         var fromRequest = template.request(
-                HermesSystemConstants.DIRECT_TO_REPOSITORY_SET_BY_ID, (
+                HermesSystemConstants.DIRECT_TO_REPOSITORY_DELETE_BY_ID, (
                         exchange -> {
-                            exchange.getIn().setBody(SmppConnectionDefinition.builder().name("vcs").description("<description/>").build());
-                           // exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "addcaa63-0dea-4962-a532-f4023eb1f850");
+                           // exchange.getIn().setBody(SmppConnectionDefinition.builder().name("vcs").description("<description/>").build());
+                            exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "915d350d-49cb-48fa-8d7d-ef4b3339485b");
                             exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, HermesConstants.SMPP_CONNECTION_OBJECT_TYPE);
                         }
                 )
