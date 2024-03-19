@@ -3,6 +3,7 @@ package com.raitonbl.hermes.smsc.camel.system.smpp;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
+import com.raitonbl.hermes.smsc.camel.system.DbType;
 import com.raitonbl.hermes.smsc.camel.system.TestBeanFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
@@ -40,7 +41,7 @@ public class RepositoryOnLocalFilesystemRouteTests {
                         exchange -> {
                             exchange.getIn().setBody(SmppConnectionDefinition.builder().name("mobitel").description("<description/>").build());
                             //exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "45f20381-db70-4673-b327-44efbc9d7991");
-                            exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, HermesConstants.SMPP_CONNECTION_OBJECT_TYPE);
+                            exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, DbType.SMPP_CONNECTION);
                         }
                 )
         );

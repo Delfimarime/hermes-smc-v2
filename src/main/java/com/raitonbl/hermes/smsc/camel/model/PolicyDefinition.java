@@ -2,25 +2,27 @@ package com.raitonbl.hermes.smsc.camel.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.raitonbl.hermes.smsc.camel.system.Versioned;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class PolicyDefinition implements Versioned,Serializable {
-    @JsonProperty("id")
-    private String id;
-    @JsonProperty("version")
-    private Long version;
+public class PolicyDefinition extends Entity implements Serializable {
     @JsonProperty("spec")
     private Spec spec;
+
+    @Builder
+    public PolicyDefinition(String id, Long version, Spec spec) {
+        super(id, version);
+        this.spec = spec;
+    }
 
     @Data
     @Builder

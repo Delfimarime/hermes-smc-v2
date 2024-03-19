@@ -1,10 +1,11 @@
 package com.raitonbl.hermes.smsc.config.smpp;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
 import com.raitonbl.hermes.smsc.config.ConfigurationUtils;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.camel.component.smpp.SmppSplittingPolicy;
@@ -14,44 +15,69 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Getter
 @Setter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SmppConfiguration implements Cloneable {
-    @Null
-    public String redirectTo;
+    @JsonProperty("redirect_to")
+    public @NotNull String redirectTo;
+    @JsonProperty("npi")
     private Byte npi;
-    @NotNull
-    @NotEmpty
-    private SmppConnectionType smppConnectionType;
+    @JsonProperty("connection_type")
+    private @NotNull SmppConnectionType smppConnectionType;
+    @JsonProperty("port")
     private String port;
+    @JsonProperty("verify_tls")
     private Boolean verifyTls;
+    @JsonProperty("username")
     private String username;
+    @JsonProperty("password")
     private String password;
-    @NotNull
-    @NotEmpty
-    private String hostname;
-    @NotNull
-    @NotEmpty
-    private String systemId;
+    @JsonProperty("hostname")
+    private @NotNull @NotEmpty String hostname;
+    @JsonProperty("system_id")
+    private @NotNull @NotEmpty String systemId;
+    @JsonProperty("destination_address")
     private String destAddr;
+    @JsonProperty("encoding")
     private String encoding;
+    @JsonProperty("alphabet")
     private Alphabet alphabet;
+    @JsonProperty("system_type")
     private String systemType;
+    @JsonProperty("source_address")
     private String sourceAddr;
+    @JsonProperty("data_coding")
     private Byte dataCoding;
+    @JsonProperty("destination_address_npi")
     private Byte destAddrNpi;
+    @JsonProperty("destination_address_ton")
     private Byte destAddrTon;
+    @JsonProperty("address_range")
     private String addressRange;
+    @JsonProperty("delivery_type")
     private RegisteredDelivery deliveryType;
+    @JsonProperty("max_reconnect")
     private Integer maxReconnect;
+    @JsonProperty("source_address_npi")
     private Byte sourceAddrNpi;
+    @JsonProperty("source_address_ton")
     private Byte sourceAddrTon;
+    @JsonProperty("reconnect_delay")
     private Long reconnectDelay;
+    @JsonProperty("splitting_policy")
     private SmppSplittingPolicy splittingPolicy;
+    @JsonProperty("enquire_link_timer")
     private Integer enquireLinkTimer;
+    @JsonProperty("transaction_timer")
     private Integer transactionTimer;
-    private Integer numberOfWriteQueue;
+    @JsonProperty("number_of_write_queues")
+    private Integer numberOfWriteQueues;
+    @JsonProperty("number_of_read_threads")
     private Integer numberOfReadThreads;
+    @JsonProperty("wait_single_delivery_report")
     private Boolean singleDeliveryReport;
+    @JsonProperty("initial_reconnect_delay")
     private Long initialReconnectDelay;
+    @JsonProperty("circuit_breaker")
     private CircuitBreakerConfig circuitBreakerConfig;
 
     public SmppConfiguration() {
@@ -86,7 +112,7 @@ public class SmppConfiguration implements Cloneable {
         this.enquireLinkTimer = from.enquireLinkTimer;
         this.transactionTimer = from.transactionTimer;
         this.smppConnectionType = from.smppConnectionType;
-        this.numberOfWriteQueue = from.numberOfWriteQueue;
+        this.numberOfWriteQueues = from.numberOfWriteQueues;
         this.numberOfReadThreads = from.numberOfReadThreads;
         this.singleDeliveryReport = from.singleDeliveryReport;
         this.initialReconnectDelay = from.initialReconnectDelay;
@@ -129,7 +155,7 @@ public class SmppConfiguration implements Cloneable {
             ConfigurationUtils.setParameter(sb, isFirst, "addressRange", addressRange);
             ConfigurationUtils.setParameter(sb, isFirst, "enquireLinkTimer", enquireLinkTimer);
             ConfigurationUtils.setParameter(sb, isFirst, "pduProcessorDegree", numberOfReadThreads);
-            ConfigurationUtils.setParameter(sb, isFirst, "pduProcessorQueueCapacity", numberOfWriteQueue);
+            ConfigurationUtils.setParameter(sb, isFirst, "pduProcessorQueueCapacity", numberOfWriteQueues);
         }
         if (isTransmitter || isTransceiver) {
             ConfigurationUtils.setParameter(sb, isFirst, "destAddr", destAddr);
