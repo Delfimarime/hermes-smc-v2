@@ -255,7 +255,6 @@ public class RepositoryRouteBuilder extends RouteBuilder {
         exchange.getIn().setHeader(HermesConstants.TARGET, request);
     }
 
-
     @Autowired
     public void setConfiguration(HermesConfiguration configuration) {
         this.configuration = configuration.getDatasource();
