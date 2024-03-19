@@ -15,7 +15,6 @@ import lombok.Builder;
 import lombok.Getter;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.component.etcd3.Etcd3Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
