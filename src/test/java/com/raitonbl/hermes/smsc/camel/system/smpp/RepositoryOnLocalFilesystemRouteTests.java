@@ -6,6 +6,7 @@ import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.camel.system.TestBeanFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.component.etcd3.Etcd3Configuration;
 import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.junit.jupiter.api.Test;
@@ -35,10 +36,10 @@ public class RepositoryOnLocalFilesystemRouteTests {
     @Test
     void run() throws Exception {
         var fromRequest = template.request(
-                HermesSystemConstants.DIRECT_TO_REPOSITORY_DELETE_BY_ID, (
+                HermesSystemConstants.DIRECT_TO_REPOSITORY_CREATE, (
                         exchange -> {
-                           // exchange.getIn().setBody(SmppConnectionDefinition.builder().name("vcs").description("<description/>").build());
-                            exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "915d350d-49cb-48fa-8d7d-ef4b3339485b");
+                            exchange.getIn().setBody(SmppConnectionDefinition.builder().name("mobitel").description("<description/>").build());
+                            //exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "45f20381-db70-4673-b327-44efbc9d7991");
                             exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, HermesConstants.SMPP_CONNECTION_OBJECT_TYPE);
                         }
                 )
