@@ -1,10 +1,8 @@
-package com.raitonbl.hermes.smsc.camel.system.smpp;
+package com.raitonbl.hermes.smsc.camel.system.datasource;
 
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
-import com.raitonbl.hermes.smsc.camel.system.datasource.DbType;
-import com.raitonbl.hermes.smsc.camel.system.datasource.EntityListenerRouteFactory;
 import com.raitonbl.hermes.smsc.camel.system.TestBeanFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
