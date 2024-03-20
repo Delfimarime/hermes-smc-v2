@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.system;
+package com.raitonbl.hermes.smsc.camel.system.datasource;
 
 import com.raitonbl.hermes.smsc.camel.model.Entity;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;

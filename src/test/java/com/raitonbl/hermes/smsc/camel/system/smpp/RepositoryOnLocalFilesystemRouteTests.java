@@ -3,21 +3,17 @@ package com.raitonbl.hermes.smsc.camel.system.smpp;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
-import com.raitonbl.hermes.smsc.camel.system.DbType;
-import com.raitonbl.hermes.smsc.camel.system.EntityListenerRouteFactory;
+import com.raitonbl.hermes.smsc.camel.system.datasource.DbType;
+import com.raitonbl.hermes.smsc.camel.system.datasource.EntityListenerRouteFactory;
 import com.raitonbl.hermes.smsc.camel.system.TestBeanFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.component.etcd3.Etcd3Configuration;
-import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
-
-import java.util.Optional;
 
 @SpringBootTest
 @CamelSpringBootTest

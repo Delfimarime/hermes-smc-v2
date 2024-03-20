@@ -1,16 +1,18 @@
-package com.raitonbl.hermes.smsc.camel.system;
+package com.raitonbl.hermes.smsc.camel.system.datasource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.Entity;
+import com.raitonbl.hermes.smsc.camel.system.EntityNotFoundException;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.Provider;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.KeyValue;
 import io.etcd.jetcd.kv.GetResponse;
+import io.etcd.jetcd.watch.WatchEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.etcd3.Etcd3Constants;
@@ -49,9 +51,21 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
         consumerConfiguration.setPrefix(etcdPath);
         consumerConfiguration.setEnablePrefixMode(Boolean.TRUE);
         return builder.from(consumerConfiguration.toObserveURI())
-                .setHeader(HermesConstants.OBJECT_TYPE, builder.constant(dbType))
-                .process(exchange -> System.out.println(exchange.getIn().getBody()))
-                .end();
+                .setHeader(HermesConstants.TARGET, builder.constant(dbType))
+                .process(exchange -> {
+                    WatchEvent event = exchange.getIn().getBody(WatchEvent.class);
+                    if (event.getEventType() == null || WatchEvent.EventType.UNRECOGNIZED.equals(event.getEventType())) {
+                       exchange.getIn().setBody(null);
+                       return;
+                    }
+                    Long version = event.getKeyValue().getVersion();
+                    String payload = event.getKeyValue().getValue().toString();
+                    Event.EventType dbEventType = event.getEventType() == WatchEvent.EventType.PUT ?
+                            Event.EventType.SET : Event.EventType.DELETE;
+                    Event dbEvent = Event.builder().type(dbEventType)
+                            .target(doDeserialize(dbType,payload,version)).build();
+                    exchange.getIn().setBody(dbEvent);
+                });
     }
 
     private void initAddRoute() {
@@ -105,7 +119,7 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
                         original.getIn().setBody(content);
                         return original;
                     })
-                    .process(this::parseCollection)
+                    .process(this::deserializeValues)
                 .endDoTry()
                 .doFinally()
                     .removeHeaders(
@@ -140,7 +154,7 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
                                 original.getIn().setHeader(HermesConstants.ENTITY_VERSION, kv.getVersion());
                                 return original;
                             })
-                            .process(this::parseSingleValue)
+                            .process(this::deserializeValue)
                         .endDoTry()
                         .doFinally()
                             .removeHeaders(
@@ -216,18 +230,24 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
                 .end();
     }
 
-    private void parseCollection(Exchange exchange) throws JsonProcessingException {
+    private void deserializeValues(Exchange exchange) throws JsonProcessingException {
         var opts = exchange.getIn().getHeader(HermesConstants.TARGET, DbType.class);
         var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.javaType.arrayType());
         exchange.getIn().setBody(returnObject);
     }
 
-    private void parseSingleValue(Exchange exchange) throws JsonProcessingException {
-        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, DbType.class);
-        var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.javaType);
-        returnObject.setVersion(exchange.getIn().getHeader(HermesConstants.ENTITY_VERSION, Long.class));
-        exchange.getIn().setBody(returnObject);
+    private void deserializeValue(Exchange exchange) throws JsonProcessingException {
+        var dbType = exchange.getIn().getHeader(HermesConstants.TARGET, DbType.class);
+        var version=exchange.getIn().getHeader(HermesConstants.ENTITY_VERSION, Long.class);
+        exchange.getIn().setBody(doDeserialize(dbType,exchange.getIn().getBody(String.class),version));
     }
+
+    private Entity doDeserialize(DbType dbType, String value, Long version) throws JsonProcessingException {
+        var returnObject = objectMapper.readValue(value, dbType.javaType);
+        returnObject.setVersion(version);
+        return returnObject;
+    }
+
 
     private void beforePersist(Exchange exchange) throws Exception {
         Entity request = exchange.getIn().getBody(Entity.class);
