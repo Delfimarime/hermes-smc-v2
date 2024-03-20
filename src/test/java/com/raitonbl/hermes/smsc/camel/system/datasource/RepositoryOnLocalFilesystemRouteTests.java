@@ -28,7 +28,7 @@ public class RepositoryOnLocalFilesystemRouteTests {
     @Autowired
     CamelContext context;
     @Autowired
-    EntityListenerRouteFactory factory;
+    EntityLifecycleListenerRouteFactory factory;
 
     @Test
     void run() throws Exception {
@@ -37,7 +37,7 @@ public class RepositoryOnLocalFilesystemRouteTests {
                         exchange -> {
                             exchange.getIn().setBody(SmppConnectionDefinition.builder().name("mobitel").description("<description/>").build());
                             //exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "45f20381-db70-4673-b327-44efbc9d7991");
-                            exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, DbType.SMPP_CONNECTION);
+                            exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, DatasourceType.SMPP_CONNECTION);
                         }
                 )
         );
@@ -59,7 +59,7 @@ public class RepositoryOnLocalFilesystemRouteTests {
                         exchange -> {
                             exchange.getIn().setBody(SmppConnectionDefinition.builder().name("mobitel").description("<description/>").build());
                             //exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "45f20381-db70-4673-b327-44efbc9d7991");
-                            exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, DbType.SMPP_CONNECTION);
+                            exchange.getIn().setHeader(HermesConstants.OBJECT_TYPE, DatasourceType.SMPP_CONNECTION);
                         }
                 )
         );

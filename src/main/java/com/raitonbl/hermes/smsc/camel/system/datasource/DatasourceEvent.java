@@ -10,7 +10,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Event implements Serializable {
+public class DatasourceEvent implements Serializable {
     private Entity target;
     private EventType type;
     public enum EventType {

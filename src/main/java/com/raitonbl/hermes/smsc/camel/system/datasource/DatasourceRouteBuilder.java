@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 @Component
-public class RepositoryRouteBuilder extends RouteBuilder implements EntityListenerRouteFactory {
+public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecycleListenerRouteFactory {
     private static final String DETERMINE_ETCD_BASE_PATH = "${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.OBJECT_TYPE + ".prefix}";
     private static final String DETERMINE_ETCD_KEY_EXPRESSION = DETERMINE_ETCD_BASE_PATH+"/${headers." + HermesConstants.ENTITY_ID + "}";
     private ObjectMapper  objectMapper;
@@ -41,7 +41,7 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
     }
 
     @Override
-    public ProcessorDefinition<?> create(RouteBuilder builder, DbType dbType) {
+    public ProcessorDefinition<?> create(RouteBuilder builder, DatasourceType dbType) {
         if (dbType == null) {
             throw new IllegalArgumentException("null isn't supported");
         }
@@ -60,9 +60,9 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
                     }
                     Long version = event.getKeyValue().getVersion();
                     String payload = event.getKeyValue().getValue().toString();
-                    Event.EventType dbEventType = event.getEventType() == WatchEvent.EventType.PUT ?
-                            Event.EventType.SET : Event.EventType.DELETE;
-                    Event dbEvent = Event.builder().type(dbEventType)
+                    DatasourceEvent.EventType dbEventType = event.getEventType() == WatchEvent.EventType.PUT ?
+                            DatasourceEvent.EventType.SET : DatasourceEvent.EventType.DELETE;
+                    DatasourceEvent dbEvent = DatasourceEvent.builder().type(dbEventType)
                             .target(doDeserialize(dbType,payload,version)).build();
                     exchange.getIn().setBody(dbEvent);
                 });
@@ -231,18 +231,18 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
     }
 
     private void deserializeValues(Exchange exchange) throws JsonProcessingException {
-        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, DbType.class);
+        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, DatasourceType.class);
         var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.javaType.arrayType());
         exchange.getIn().setBody(returnObject);
     }
 
     private void deserializeValue(Exchange exchange) throws JsonProcessingException {
-        var dbType = exchange.getIn().getHeader(HermesConstants.TARGET, DbType.class);
+        var dbType = exchange.getIn().getHeader(HermesConstants.TARGET, DatasourceType.class);
         var version=exchange.getIn().getHeader(HermesConstants.ENTITY_VERSION, Long.class);
         exchange.getIn().setBody(doDeserialize(dbType,exchange.getIn().getBody(String.class),version));
     }
 
-    private Entity doDeserialize(DbType dbType, String value, Long version) throws JsonProcessingException {
+    private Entity doDeserialize(DatasourceType dbType, String value, Long version) throws JsonProcessingException {
         var returnObject = objectMapper.readValue(value, dbType.javaType);
         returnObject.setVersion(version);
         return returnObject;
