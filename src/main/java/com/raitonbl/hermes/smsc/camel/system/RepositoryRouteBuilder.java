@@ -14,14 +14,16 @@ import io.etcd.jetcd.kv.GetResponse;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.etcd3.Etcd3Constants;
+import org.apache.camel.model.ProcessorDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Component
-public class RepositoryRouteBuilder extends RouteBuilder {
-    private static final String DETERMINE_ETCD_KEY_EXPRESSION = "${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.OBJECT_TYPE + ".prefix}/${headers." + HermesConstants.ENTITY_ID + "}";
+public class RepositoryRouteBuilder extends RouteBuilder implements EntityListenerRouteFactory {
+    private static final String DETERMINE_ETCD_BASE_PATH = "${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.OBJECT_TYPE + ".prefix}";
+    private static final String DETERMINE_ETCD_KEY_EXPRESSION = DETERMINE_ETCD_BASE_PATH+"/${headers." + HermesConstants.ENTITY_ID + "}";
     private ObjectMapper  objectMapper;
     private DatasourceConfiguration configuration;
     @Override
@@ -34,6 +36,22 @@ public class RepositoryRouteBuilder extends RouteBuilder {
         initFindByIdRoute();
         initEditByIdRoute();
         initDeleteByIdRoute();
+        create(this, DbType.SMPP_CONNECTION).routeId("etcd3-test");
+    }
+
+    @Override
+    public ProcessorDefinition<?> create(RouteBuilder builder, DbType dbType) {
+        if (dbType == null) {
+            throw new IllegalArgumentException("null isn't supported");
+        }
+        String etcdPath = configuration.getDefaultPath() + "/" + dbType.prefix+"/";
+        var consumerConfiguration = configuration.clone();
+        consumerConfiguration.setPrefix(etcdPath);
+        consumerConfiguration.setEnablePrefixMode(Boolean.TRUE);
+        return builder.from(consumerConfiguration.toObserveURI())
+                .setHeader(HermesConstants.OBJECT_TYPE, builder.constant(dbType))
+                .process(exchange -> System.out.println(exchange.getIn().getBody()))
+                .end();
     }
 
     private void initAddRoute() {
@@ -55,7 +73,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                     .setHeader(Etcd3Constants.ETCD_PATH, simple(DETERMINE_ETCD_KEY_EXPRESSION))
                     .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_SET))
                     .process(this::beforePersist)
-                    .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                    .enrich(configuration.toProducerURI(), (original, fromEnrich) -> {
                         original.getIn().setBody(original.getIn().getHeader(HermesConstants.TARGET));
                         return original;
                     })
@@ -78,8 +96,8 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                     .setHeader(Etcd3Constants.ETCD_IS_PREFIX, constant(Boolean.TRUE))
                     .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_GET))
                     .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
-                    .setHeader(Etcd3Constants.ETCD_PATH, simple("${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.OBJECT_TYPE + ".prefix}"))
-                    .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                    .setHeader(Etcd3Constants.ETCD_PATH, simple(DETERMINE_ETCD_BASE_PATH))
+                    .enrich(configuration.toProducerURI(), (original, fromEnrich) -> {
                         GetResponse response = fromEnrich.getIn().getBody(GetResponse.class);
                         String content = response.getKvs().stream().map(KeyValue::getValue)
                                 .map(ByteSequence::toString).reduce((acc, v) -> acc + "," + v)
@@ -111,7 +129,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                             .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_GET))
                             .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
                             .setHeader(Etcd3Constants.ETCD_PATH, simple(DETERMINE_ETCD_KEY_EXPRESSION))
-                            .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                            .enrich(configuration.toProducerURI(), (original, fromEnrich) -> {
                                 GetResponse response = fromEnrich.getIn().getBody(GetResponse.class);
                                 if(response.getKvs().isEmpty()){
                                     original.getIn().setBody(null);
@@ -147,7 +165,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                     .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
                     .setHeader(Etcd3Constants.ETCD_PATH, simple(DETERMINE_ETCD_KEY_EXPRESSION))
                     .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_GET))
-                    .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                    .enrich(configuration.toProducerURI(), (original, fromEnrich) -> {
                         GetResponse response = fromEnrich.getIn().getBody(GetResponse.class);
                         if (response.getKvs().isEmpty()) {
                             original.setException(new EntityNotFoundException(original.getIn().getHeader(HermesConstants.ENTITY_ID, String.class)));
@@ -156,7 +174,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                     })
                     .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_SET))
                     .process(this::beforePersist)
-                    .to(configuration.toConsumerURI())
+                    .to(configuration.toProducerURI())
                     .process(exchange -> {
                         exchange.getIn().setBody(exchange.getIn().getHeader(HermesConstants.TARGET));
                     })
@@ -183,7 +201,7 @@ public class RepositoryRouteBuilder extends RouteBuilder {
                         .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
                         .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_DELETE))
                         .setHeader(Etcd3Constants.ETCD_PATH, simple(DETERMINE_ETCD_KEY_EXPRESSION))
-                        .enrich(configuration.toConsumerURI(), (original, fromEnrich) -> {
+                        .enrich(configuration.toProducerURI(), (original, fromEnrich) -> {
                             original.getIn().setBody(null);
                             return original;
                         })

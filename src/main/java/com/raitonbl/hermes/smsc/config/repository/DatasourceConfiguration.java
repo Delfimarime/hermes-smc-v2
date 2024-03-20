@@ -5,13 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 @Data
 @Builder
-public class DatasourceConfiguration {
+public class DatasourceConfiguration implements Cloneable {
     private Provider type;
     // Credentials
     private String username;
@@ -29,32 +30,27 @@ public class DatasourceConfiguration {
     private Integer retryMaxDuration;
     private String servicePath;
     private String prefix;
+    private transient Boolean enablePrefixMode;
 
     public String toObserveURI() {
-        switch (this.type) {
-            case ETCD -> {
-                return getEtcdConsumerURI();
-            }
-            default -> throw new IllegalArgumentException("Unsupported type=" + this.type);
+        if (Provider.ETCD.equals(this.type)) {
+            return getEtcdConsumerURI();
         }
+        throw new IllegalArgumentException("Unsupported type=" + this.type);
     }
 
     public String toConsumerURI() {
-        switch (this.type) {
-            case ETCD -> {
-                return getEtcdConsumerURI();
-            }
-            default -> throw new IllegalArgumentException("Unsupported type=" + this.type);
+        if (Provider.ETCD.equals(this.type)) {
+            return getEtcdConsumerURI();
         }
+        throw new IllegalArgumentException("Unsupported type=" + this.type);
     }
 
     public String toProducerURI() {
-        switch (this.type) {
-            case ETCD -> {
-                return getEtcdProducerURI();
-            }
-            default -> throw new IllegalArgumentException("Unsupported type=" + this.type);
+        if (Provider.ETCD.equals(this.type)) {
+            return getEtcdProducerURI();
         }
+        throw new IllegalArgumentException("Unsupported type=" + this.type);
     }
 
     private String getEtcdConsumerURI() {
@@ -81,15 +77,22 @@ public class DatasourceConfiguration {
             throw new IllegalArgumentException(this.authenticationType + " isn't supported");
         }
 
+        ConfigurationUtils.setParameter(sb, isFirst, "namespace", this.namespace);
         ConfigurationUtils.setParameter(sb, isFirst, "fromIndex", this.fromIndex);
         ConfigurationUtils.setParameter(sb, isFirst, "retryDelay", this.retryDelay);
         ConfigurationUtils.setParameter(sb, isFirst, "servicePath", this.servicePath);
         ConfigurationUtils.setParameter(sb, isFirst, "retryMaxDelay", this.retryMaxDelay);
-        ConfigurationUtils.setParameter(sb, isFirst, "namespace", this.namespace, "/");
-        ConfigurationUtils.setParameter(sb, isFirst, "keepAliveTime", this.keepAliveTime == null ? null : this.keepAliveTime + " seconds");
-        ConfigurationUtils.setParameter(sb, isFirst, "keepAliveTimeout", this.keepAliveTimeout == null ? null : this.keepAliveTimeout + " seconds");
-        ConfigurationUtils.setParameter(sb, isFirst, "retryMaxDuration", this.retryMaxDuration == null ? null : this.retryMaxDuration + " seconds");
-        ConfigurationUtils.setParameter(sb, isFirst, "connectionTimeout", this.connectionTimeout == null ? null : this.connectionTimeout + " seconds");
+        ConfigurationUtils.setParameter(sb, isFirst, "keepAliveTime", Optional.ofNullable(this.keepAliveTime)
+                .map(value -> value + " seconds").orElse(null));
+        ConfigurationUtils.setParameter(sb, isFirst, "keepAliveTimeout", Optional.ofNullable(this.keepAliveTimeout)
+                .map(value -> value + " seconds").orElse(null));
+        ConfigurationUtils.setParameter(sb, isFirst, "retryMaxDuration", Optional.ofNullable(this.retryDelay)
+                .map(value -> value + " seconds").orElse(null));
+        ConfigurationUtils.setParameter(sb, isFirst, "connectionTimeout", Optional.ofNullable(this.connectionTimeout)
+                .map(value -> value + "seconds").orElse(null));
+        Optional.ofNullable(enablePrefixMode)
+                .ifPresent(isPrefixModeEnabled-> ConfigurationUtils.
+                        setParameter(sb, isFirst, "prefix", isPrefixModeEnabled));
         return sb.toString();
     }
 
@@ -104,4 +107,13 @@ public class DatasourceConfiguration {
                 .orElse("hermes/smsc");
     }
 
+    @Override
+    public DatasourceConfiguration clone() {
+        try {
+            DatasourceConfiguration clone = (DatasourceConfiguration) super.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 }

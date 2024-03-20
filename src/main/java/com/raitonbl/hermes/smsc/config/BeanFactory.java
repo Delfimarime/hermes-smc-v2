@@ -1,6 +1,10 @@
 package com.raitonbl.hermes.smsc.config;
 
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.config.repository.AuthenticationType;
+import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
+import org.apache.camel.component.etcd3.Etcd3Configuration;
+import org.apache.camel.component.etcd3.Etcd3Constants;
 import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.camel.model.language.SimpleExpression;
@@ -32,7 +36,43 @@ import java.util.concurrent.TimeUnit;
 public class BeanFactory {
     public static final String AWS_S3_CLIENT ="amazonS3Client";
     public static final String AWS_SQS_CLIENT ="amazonSQSClient";
+    public static final String ETCD_V3_CONFIGURATION ="Etcd3Configuration";
     public static final String RULES_REDIS_CONNECTION_FACTORY ="rulesRedisConnectionFactory";
+
+    @ConditionalOnMissingBean
+    @Bean(ETCD_V3_CONFIGURATION)
+    @ConditionalOnProperty(name = "spring.boot.hermes.datasource.type", havingValue = "etcd")
+    public Etcd3Configuration etcd3Configuration(HermesConfiguration hermesCfg) {
+        DatasourceConfiguration configuration = hermesCfg.getDatasource();
+        Etcd3Configuration etcd3Configuration = new Etcd3Configuration();
+        String[] endpoints = configuration.getEndpoint();
+        if(endpoints ==null){
+            endpoints = new String[]{"http://localhost:2379"};
+        }
+        etcd3Configuration.setEndpoints(endpoints);
+        if (AuthenticationType.BASIC_AUTH.equals(configuration.getAuthenticationType())) {
+            etcd3Configuration.setPassword(Optional.ofNullable(configuration.getPassword())
+                    .orElseThrow(() -> new IllegalArgumentException("password is required")));
+            etcd3Configuration.setUserName(Optional.ofNullable(configuration.getUsername())
+                    .orElseThrow(() -> new IllegalArgumentException("username is required")));
+        } else if (!AuthenticationType.NONE.equals(configuration.getAuthenticationType())) {
+            throw new IllegalArgumentException(configuration.getAuthenticationType() + " isn't supported");
+        }
+        Optional.ofNullable(configuration.getConnectionTimeout()).map(java.time.Duration::ofSeconds)
+                .ifPresent(etcd3Configuration::setConnectionTimeout);
+        Optional.ofNullable(configuration.getKeepAliveTime()).map(java.time.Duration::ofSeconds)
+                .ifPresent(etcd3Configuration::setKeepAliveTime);
+        Optional.ofNullable(configuration.getKeepAliveTimeout()).map(java.time.Duration::ofSeconds)
+                .ifPresent(etcd3Configuration::setKeepAliveTimeout);
+        Optional.ofNullable(configuration.getRetryMaxDelay()).map(java.time.Duration::ofSeconds)
+                .ifPresent(etcd3Configuration::setRetryMaxDuration);
+        Optional.ofNullable(configuration.getFromIndex()).ifPresent(etcd3Configuration::setFromIndex);
+        Optional.ofNullable(configuration.getNamespace()).ifPresent(etcd3Configuration::setNamespace);
+        Optional.ofNullable(configuration.getRetryDelay()).ifPresent(etcd3Configuration::setRetryDelay);
+        Optional.ofNullable(configuration.getServicePath()).ifPresent(etcd3Configuration::setServicePath);
+        Optional.ofNullable(configuration.getRetryMaxDelay()).ifPresent(etcd3Configuration::setRetryMaxDelay);
+        return etcd3Configuration;
+    }
 
     @Bean(HermesSystemConstants.KV_CACHE_NAME)
     public JCachePolicy kvJCachePolicy() {
