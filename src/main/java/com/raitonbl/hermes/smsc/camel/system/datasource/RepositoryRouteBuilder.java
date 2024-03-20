@@ -38,7 +38,6 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
         initFindByIdRoute();
         initEditByIdRoute();
         initDeleteByIdRoute();
-        create(this, DbType.SMPP_CONNECTION).routeId("etcd3-test");
     }
 
     @Override
@@ -46,10 +45,11 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
         if (dbType == null) {
             throw new IllegalArgumentException("null isn't supported");
         }
-        String etcdPath = configuration.getDefaultPath() + "/" + dbType.prefix+"/";
+        String etcdPath = configuration.getDefaultPath() + "/" + dbType.prefix;
         var consumerConfiguration = configuration.clone();
         consumerConfiguration.setPrefix(etcdPath);
         consumerConfiguration.setEnablePrefixMode(Boolean.TRUE);
+        System.out.println("@URI:" + consumerConfiguration.toObserveURI());
         return builder.from(consumerConfiguration.toObserveURI())
                 .setHeader(HermesConstants.TARGET, builder.constant(dbType))
                 .process(exchange -> {

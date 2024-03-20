@@ -56,13 +56,12 @@ public class DatasourceConfiguration implements Cloneable {
         if (this.endpoint == null) {
             throw new IllegalArgumentException("Expected at least one (1) endpoint");
         }
-        String prefix = getDefaultPath();
+        String path = getDefaultPath();
         StringBuilder sb = new StringBuilder();
-        sb.append("etcd3://").append(prefix);
+        sb.append("etcd3:").append(path);
         String endpoints = Stream.of(this.endpoint).filter(StringUtils::isNotBlank)
                 .map(each -> "endpoints=" + each).reduce((acc, v) -> acc + "&" + v)
                 .orElseThrow(() -> new IllegalArgumentException("Expected at least one (1) endpoint"));
-
         sb.append("?").append(endpoints);
         AtomicBoolean isFirst = new AtomicBoolean(false);
         if (AuthenticationType.BASIC_AUTH.equals(this.authenticationType)) {
@@ -75,7 +74,6 @@ public class DatasourceConfiguration implements Cloneable {
         } else if (!AuthenticationType.NONE.equals(this.authenticationType)) {
             throw new IllegalArgumentException(this.authenticationType + " isn't supported");
         }
-
         ConfigurationUtils.setParameter(sb, isFirst, "namespace", this.namespace);
         ConfigurationUtils.setParameter(sb, isFirst, "fromIndex", this.fromIndex);
         ConfigurationUtils.setParameter(sb, isFirst, "retryDelay", this.retryDelay);
@@ -89,7 +87,7 @@ public class DatasourceConfiguration implements Cloneable {
                 .map(value -> value + " seconds").orElse(null));
         ConfigurationUtils.setParameter(sb, isFirst, "connectionTimeout", Optional.ofNullable(this.connectionTimeout)
                 .map(value -> value + "seconds").orElse(null));
-        Optional.ofNullable(enablePrefixMode)
+        Optional.ofNullable(this.enablePrefixMode)
                 .ifPresent(isPrefixModeEnabled-> ConfigurationUtils.
                         setParameter(sb, isFirst, "prefix", isPrefixModeEnabled));
         return sb.toString();
@@ -102,8 +100,8 @@ public class DatasourceConfiguration implements Cloneable {
     public String getDefaultPath() {
         return Optional.ofNullable(this.prefix)
                 .map(value -> value.endsWith("/") ? value.substring(0, value.length() - 1) : value)
-                .map(value -> value.startsWith("/") ? value.substring(1) : value)
-                .orElse("hermes/smsc");
+                .map(value -> value.startsWith("/") ? value: "/"+value)
+                .orElse("/hermes/smsc");
     }
 
     @Override

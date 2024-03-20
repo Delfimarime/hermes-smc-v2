@@ -46,7 +46,7 @@ public class BeanFactory {
         DatasourceConfiguration configuration = hermesCfg.getDatasource();
         Etcd3Configuration etcd3Configuration = new Etcd3Configuration();
         String[] endpoints = configuration.getEndpoint();
-        if(endpoints ==null){
+        if (endpoints == null) {
             endpoints = new String[]{"http://localhost:2379"};
         }
         etcd3Configuration.setEndpoints(endpoints);

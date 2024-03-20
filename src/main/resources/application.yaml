@@ -23,28 +23,11 @@ spring:
           queue: unsupported-pdu-queue
         delivery-receipt-channel:
           queue: delivery-receipt-queue
-      services:
-        DEFAULT:
-          port: 2775
-          hostname: localhost
-          username: transmitter
-          password: admin
-          system-id: transmitter
-          smpp-connection-type: TRANSMITTER
-          verify-tls: false
-        MTN:
-          port: 2775
-          hostname: localhost
-          username: receiver
-          password: admin
-          system-id: receiver
-          smpp-connection-type: RECEIVER
-          verify-tls: false
-      rules-datasource:
-        type: s3
-        bucket: hermes
-        key: rules.json
-        expose-api: true
+      datasource:
+        type: etcd
+        prefix: /hermes/smsc
+        endpoint: http://localhost:2379
+        authentication-type: none
   cloud:
     discovery:
       enabled: ${HERMES_SERVER_SPRING_CLOUD_DISCOVERY_ENABLED:false}
