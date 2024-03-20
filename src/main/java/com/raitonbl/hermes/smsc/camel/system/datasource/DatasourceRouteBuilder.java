@@ -8,7 +8,6 @@ import com.raitonbl.hermes.smsc.camel.model.Entity;
 import com.raitonbl.hermes.smsc.camel.system.EntityNotFoundException;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
-import com.raitonbl.hermes.smsc.config.repository.Provider;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.KeyValue;
 import io.etcd.jetcd.kv.GetResponse;
@@ -18,11 +17,13 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.etcd3.Etcd3Constants;
 import org.apache.camel.model.ProcessorDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Component
+@ConditionalOnProperty(name = "spring.boot.hermes.datasource.type", havingValue = "etcd")
 public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecycleListenerRouteFactory {
     private static final String DETERMINE_ETCD_BASE_PATH = "${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.OBJECT_TYPE + ".prefix}";
     private static final String DETERMINE_ETCD_KEY_EXPRESSION = DETERMINE_ETCD_BASE_PATH+"/${headers." + HermesConstants.ENTITY_ID + "}";
@@ -30,9 +31,6 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
     private DatasourceConfiguration configuration;
     @Override
     public void configure() throws Exception {
-        if (configuration == null || !Provider.ETCD.equals(configuration.getType())) {
-            return;
-        }
         initAddRoute();
         initFindAllRoute();
         initFindByIdRoute();
@@ -41,7 +39,7 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
     }
 
     @Override
-    public ProcessorDefinition<?> create(RouteBuilder builder, DatasourceType dbType) {
+    public ProcessorDefinition<?> create(RouteBuilder builder, RecordType dbType) {
         if (dbType == null) {
             throw new IllegalArgumentException("null isn't supported");
         }
@@ -49,7 +47,6 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
         var consumerConfiguration = configuration.clone();
         consumerConfiguration.setPrefix(etcdPath);
         consumerConfiguration.setEnablePrefixMode(Boolean.TRUE);
-        System.out.println("@URI:" + consumerConfiguration.toObserveURI());
         return builder.from(consumerConfiguration.toObserveURI())
                 .setHeader(HermesConstants.TARGET, builder.constant(dbType))
                 .process(exchange -> {
@@ -231,18 +228,18 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
     }
 
     private void deserializeValues(Exchange exchange) throws JsonProcessingException {
-        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, DatasourceType.class);
+        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, RecordType.class);
         var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.javaType.arrayType());
         exchange.getIn().setBody(returnObject);
     }
 
     private void deserializeValue(Exchange exchange) throws JsonProcessingException {
-        var dbType = exchange.getIn().getHeader(HermesConstants.TARGET, DatasourceType.class);
+        var dbType = exchange.getIn().getHeader(HermesConstants.TARGET, RecordType.class);
         var version=exchange.getIn().getHeader(HermesConstants.ENTITY_VERSION, Long.class);
         exchange.getIn().setBody(doDeserialize(dbType,exchange.getIn().getBody(String.class),version));
     }
 
-    private Entity doDeserialize(DatasourceType dbType, String value, Long version) throws JsonProcessingException {
+    private Entity doDeserialize(RecordType dbType, String value, Long version) throws JsonProcessingException {
         var returnObject = objectMapper.readValue(value, dbType.javaType);
         returnObject.setVersion(version);
         return returnObject;
