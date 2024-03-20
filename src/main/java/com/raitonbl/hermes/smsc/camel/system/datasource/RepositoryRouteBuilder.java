@@ -248,7 +248,6 @@ public class RepositoryRouteBuilder extends RouteBuilder implements EntityListen
         return returnObject;
     }
 
-
     private void beforePersist(Exchange exchange) throws Exception {
         Entity request = exchange.getIn().getBody(Entity.class);
         request.setVersion(null);
