@@ -28,23 +28,22 @@ import java.util.concurrent.TimeUnit;
 public class PolicyRouteBuilder extends RouteBuilder {
     public static final String POLICY_CACHE_KEY = "default";
     public static final String CACHE_NAME = PolicyDefinition.class.getName();
-    private final JCachePolicy jCachePolicy;
+    private JCachePolicy jCachePolicy;
     private EntityLifecycleListenerRouteFactory entityLifecycleListenerRouteFactory;
-
-    public PolicyRouteBuilder(){
-        this.jCachePolicy = new JCachePolicy();
-        MutableConfiguration<String, Object> configuration = new MutableConfiguration<>();
-        configuration.setTypes(String.class, Object.class);
-        configuration
-                .setExpiryPolicyFactory(CreatedExpiryPolicy
-                        .factoryOf(new Duration(TimeUnit.SECONDS, 60)));
-        CacheManager cacheManager = Caching.getCachingProvider().getCacheManager();
-        Cache<String, Object> cache = cacheManager.createCache(CACHE_NAME, configuration);
-        jCachePolicy.setCache(cache);
-    }
 
     @Override
     public void configure() {
+        if (this.jCachePolicy == null) {
+            this.jCachePolicy = new JCachePolicy();
+            MutableConfiguration<String, Object> configuration = new MutableConfiguration<>();
+            configuration.setTypes(String.class, Object.class);
+            configuration
+                    .setExpiryPolicyFactory(CreatedExpiryPolicy
+                            .factoryOf(new Duration(TimeUnit.SECONDS, 60)));
+            CacheManager cacheManager = Caching.getCachingProvider().getCacheManager();
+            Cache<String, Object> cache = cacheManager.createCache(CACHE_NAME, configuration);
+            jCachePolicy.setCache(cache);
+        }
         this.addCreateRoute();
         this.addFindAllRoute();
         this.addFindByIdRoute();

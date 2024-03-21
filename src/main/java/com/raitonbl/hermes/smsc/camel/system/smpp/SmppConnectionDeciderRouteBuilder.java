@@ -5,12 +5,14 @@ import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
+import com.raitonbl.hermes.smsc.camel.system.datasource.DatasourceClient;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -21,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnBean(value = {DatasourceClient.class})
 public class SmppConnectionDeciderRouteBuilder extends RouteBuilder {
     private static final Object LOCK = new Object();
     public static final String CACHE_LISTENER_ROUTE = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "POLICY_CACHE_LISTENER";
