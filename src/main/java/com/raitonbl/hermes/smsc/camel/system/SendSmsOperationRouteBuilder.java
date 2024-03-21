@@ -10,7 +10,7 @@ import org.apache.camel.component.smpp.SmppConstants;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SendSmsRouteBuilder extends RouteBuilder {
+public class SendSmsOperationRouteBuilder extends RouteBuilder {
     private static final String EXECUTE_TROUGH_POLICY_ROUTE = HermesSystemConstants.SEND_MESSAGE_SYSTEM_ROUTE + "_EXECUTE";
     private static final String DIRECT_TO_EXECUTE_TROUGH_POLICY_ROUTE = "direct:" + EXECUTE_TROUGH_POLICY_ROUTE;
     public static final String RAW_BODY_HEADER = HermesConstants.HEADER_PREFIX + "SendSmsRequest";
