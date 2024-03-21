@@ -9,8 +9,10 @@ import com.raitonbl.hermes.smsc.camel.system.EntityNotFoundException;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
 import io.etcd.jetcd.ByteSequence;
+import io.etcd.jetcd.Client;
 import io.etcd.jetcd.KeyValue;
 import io.etcd.jetcd.kv.GetResponse;
+import io.etcd.jetcd.options.GetOption;
 import io.etcd.jetcd.watch.WatchEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -20,13 +22,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Component
 @ConditionalOnProperty(name = "spring.boot.hermes.datasource.type", havingValue = "etcd")
-public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecycleListenerRouteFactory {
+public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceClient,EntityLifecycleListenerRouteFactory {
     private static final String DETERMINE_ETCD_BASE_PATH = "${headers." + Etcd3Constants.ETCD_PATH + "}/${headers." + HermesConstants.OBJECT_TYPE + ".prefix}";
     private static final String DETERMINE_ETCD_KEY_EXPRESSION = DETERMINE_ETCD_BASE_PATH+"/${headers." + HermesConstants.ENTITY_ID + "}";
+    private Client client;
     private ObjectMapper  objectMapper;
     private DatasourceConfiguration configuration;
     @Override
@@ -110,10 +115,7 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
                     .setHeader(Etcd3Constants.ETCD_PATH, simple(DETERMINE_ETCD_BASE_PATH))
                     .enrich(configuration.toProducerURI(), (original, fromEnrich) -> {
                         GetResponse response = fromEnrich.getIn().getBody(GetResponse.class);
-                        String content = response.getKvs().stream().map(KeyValue::getValue)
-                                .map(ByteSequence::toString).reduce((acc, v) -> acc + "," + v)
-                                .map(v -> "[" + v + "]").orElse("[]");
-                        original.getIn().setBody(content);
+                        original.getIn().setBody(extractCollectionFromResponse(response));
                         return original;
                     })
                     .process(this::deserializeValues)
@@ -124,7 +126,6 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
                                     Etcd3Constants.ETCD_ACTION + "|" + Etcd3Constants.ETCD_PATH
                 );
     }
-
     private void initFindByIdRoute() {
         from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_BY_ID)
                 .routeId(HermesSystemConstants.REPOSITORY_FIND_BY_ID)
@@ -227,16 +228,37 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
                 .end();
     }
 
-    private void deserializeValues(Exchange exchange) throws JsonProcessingException {
-        var opts = exchange.getIn().getHeader(HermesConstants.TARGET, RecordType.class);
-        var returnObject = objectMapper.readValue(exchange.getIn().getBody(String.class), opts.javaType.arrayType());
-        exchange.getIn().setBody(returnObject);
+    @Override
+    public <E extends Entity> Stream<E> findAll(RecordType objectType) throws Exception {
+        String path = configuration.getDefaultPath() + "/" + objectType.prefix;
+        GetResponse response = this.client.getKVClient().get(
+                ByteSequence.from(path, StandardCharsets.UTF_8),
+                GetOption.newBuilder().isPrefix(Boolean.TRUE).build()
+        ).get();
+        E[] definitions = doDeserializeValues(objectType, extractCollectionFromResponse(response));
+        return Stream.of(definitions);
+    }
+
+    private String extractCollectionFromResponse(GetResponse response){
+        return response.getKvs().stream().map(KeyValue::getValue)
+                .map(ByteSequence::toString).reduce((acc, v) -> acc + "," + v)
+                .map(v -> "[" + v + "]").orElse("[]");
     }
 
     private void deserializeValue(Exchange exchange) throws JsonProcessingException {
         var dbType = exchange.getIn().getHeader(HermesConstants.TARGET, RecordType.class);
         var version=exchange.getIn().getHeader(HermesConstants.ENTITY_VERSION, Long.class);
         exchange.getIn().setBody(doDeserialize(dbType,exchange.getIn().getBody(String.class),version));
+    }
+
+    private void deserializeValues(Exchange exchange) throws JsonProcessingException {
+        RecordType dbType = exchange.getIn().getHeader(HermesConstants.TARGET, RecordType.class);
+        exchange.getIn().setBody(doDeserializeValues(dbType,exchange.getIn().getBody(String.class)));
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private <E> E[] doDeserializeValues(RecordType dbType, String value) throws JsonProcessingException {
+        return (E[]) objectMapper.readValue(value, dbType.javaType.arrayType());
     }
 
     private Entity doDeserialize(RecordType dbType, String value, Long version) throws JsonProcessingException {
@@ -251,6 +273,11 @@ public class DatasourceRouteBuilder extends RouteBuilder implements EntityLifecy
         request.setId(exchange.getIn().getHeader(HermesConstants.ENTITY_ID, String.class));
         exchange.getIn().setBody(objectMapper.writeValueAsString(request));
         exchange.getIn().setHeader(HermesConstants.TARGET, request);
+    }
+
+    @Autowired
+    public void setClient(Client client) {
+        this.client = client;
     }
 
     @Autowired

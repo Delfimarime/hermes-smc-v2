@@ -3,6 +3,7 @@ package com.raitonbl.hermes.smsc.config;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.config.repository.AuthenticationType;
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
+import io.etcd.jetcd.Client;
 import org.apache.camel.component.etcd3.Etcd3Configuration;
 import org.apache.camel.component.etcd3.Etcd3Constants;
 import org.apache.camel.component.jcache.JCacheConstants;
@@ -72,6 +73,13 @@ public class BeanFactory {
         Optional.ofNullable(configuration.getServicePath()).ifPresent(etcd3Configuration::setServicePath);
         Optional.ofNullable(configuration.getRetryMaxDelay()).ifPresent(etcd3Configuration::setRetryMaxDelay);
         return etcd3Configuration;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(name = "spring.boot.hermes.datasource.type", havingValue = "etcd")
+    public Client jetcdClient(Etcd3Configuration cfg) {
+        return cfg.createClient();
     }
 
     @Bean(HermesSystemConstants.KV_CACHE_NAME)
