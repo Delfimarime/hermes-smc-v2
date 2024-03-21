@@ -5,7 +5,6 @@ import com.raitonbl.hermes.smsc.camel.asyncapi.ReceivedSmsRequest;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SmsDeliveryReceipt;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
-import com.raitonbl.hermes.smsc.camel.system.PublishPduEventRouteType;
 import com.raitonbl.hermes.smsc.camel.system.datasource.DatasourceClient;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;

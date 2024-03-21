@@ -2,7 +2,6 @@ package com.raitonbl.hermes.smsc.camel.system;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.camel.system.smpp.PolicyRouteBuilder;
@@ -47,15 +46,15 @@ public class TestBeanFactory {
     }
 
     public static void setSmppConnectionDefinition(SmppConnectionDefinition... definition) {
-        if(definition ==null || definition.length==0){
-            Optional.ofNullable(
-                    Caching.getCachingProvider().getCacheManager().getCache(HermesSystemConstants.KV_CACHE_NAME)
-            ).ifPresent(cache -> cache.remove(SmppRepositoryRouteBuilder.CACHE_KEY));
+        if (definition == null || definition.length == 0) {
+//            Optional.ofNullable(
+//                    Caching.getCachingProvider().getCacheManager().getCache(HermesSystemConstants.KV_CACHE_NAME)
+//            ).ifPresent(cache -> cache.remove(SmppRepositoryRouteBuilder.CACHE_KEY));
             return;
         }
-        Optional.ofNullable(
-                Caching.getCachingProvider().getCacheManager().getCache(HermesSystemConstants.KV_CACHE_NAME)
-        ).ifPresent(cache -> cache.put(SmppRepositoryRouteBuilder.CACHE_KEY, definition));
+//        Optional.ofNullable(
+//                Caching.getCachingProvider().getCacheManager().getCache(HermesSystemConstants.KV_CACHE_NAME)
+//        ).ifPresent(cache -> cache.put(SmppRepositoryRouteBuilder.CACHE_KEY, definition));
     }
 
 

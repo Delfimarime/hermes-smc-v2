@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.system;
+package com.raitonbl.hermes.smsc.camel.system.smpp;
 
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 

@@ -1,6 +1,5 @@
 package com.raitonbl.hermes.smsc.camel.system.smpp;
 
-import com.raitonbl.hermes.smsc.camel.system.PublishPduEventRouteType;
 import com.raitonbl.hermes.smsc.camel.system.datasource.DatasourceClient;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PublishConfiguration;
