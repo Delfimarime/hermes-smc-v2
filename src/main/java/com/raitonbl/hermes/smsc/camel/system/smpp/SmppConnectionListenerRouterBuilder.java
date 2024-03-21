@@ -1,17 +1,19 @@
-package com.raitonbl.hermes.smsc.camel.system;
+package com.raitonbl.hermes.smsc.camel.system.smpp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.asyncapi.ReceivedSmsRequest;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SmsDeliveryReceipt;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
-import com.raitonbl.hermes.smsc.config.HermesConfiguration;
-import jakarta.inject.Inject;
+import com.raitonbl.hermes.smsc.camel.system.PublishPduEventRouteType;
+import com.raitonbl.hermes.smsc.camel.system.datasource.DatasourceClient;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.jsmpp.util.DeliveryReceiptState;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -19,8 +21,9 @@ import java.time.ZoneId;
 import java.util.Date;
 
 @Component
+@ConditionalOnBean(value = DatasourceClient.class)
 public  class SmppConnectionListenerRouterBuilder extends RouteBuilder {
-    public static final String ROUTE_ID = HermesSystemConstants.SYSTEM_ROUTE_PREFIX +"PDU_LISTENER";
+    public static final String ROUTE_ID = HermesSystemConstants.INTERNAL_ROUTE_PREFIX +"PDU_LISTENER";
     public static final String DIRECT_TO = "direct:" + ROUTE_ID;
     public final static String UNSUPPORTED_PDU_EVENT = String.format(
             "PduEvent{type:${headers.%s},source:${headers.%s},id:${headers.%s}} isn't supported",
@@ -44,14 +47,9 @@ public  class SmppConnectionListenerRouterBuilder extends RouteBuilder {
     );
 
     private  ObjectMapper objectMapper;
-    private HermesConfiguration configuration;
-
 
     @Override
     public void configure() throws Exception {
-        if (configuration.getServices() == null || configuration.getServices().isEmpty()) {
-            return;
-        }
         from("direct:" + ROUTE_ID)
                 .routeId(ROUTE_ID)
                 .routeDescription("Listens to smpp.PduEvent and submits it to an queue")
@@ -101,13 +99,9 @@ public  class SmppConnectionListenerRouterBuilder extends RouteBuilder {
         exchange.getIn().setBody(objectMapper.writeValueAsString(target));
     }
 
-    @Inject
+    @Autowired
     public void setObjectMapper(ObjectMapper objectMapper){
         this.objectMapper = objectMapper;
-    }
-    @Inject
-    public void setConfiguration(HermesConfiguration configuration) {
-        this.configuration = configuration;
     }
 
 }

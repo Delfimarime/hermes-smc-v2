@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.system.common;
+package com.raitonbl.hermes.smsc.camel.system.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;

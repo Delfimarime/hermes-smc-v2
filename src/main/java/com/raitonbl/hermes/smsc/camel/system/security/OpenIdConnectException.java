@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.system.common;
+package com.raitonbl.hermes.smsc.camel.system.security;
 
 public class OpenIdConnectException extends RuntimeException{
     public OpenIdConnectException() {

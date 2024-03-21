@@ -1,25 +1,24 @@
-package com.raitonbl.hermes.smsc.camel.system;
+package com.raitonbl.hermes.smsc.camel.system.smpp;
 
+import com.raitonbl.hermes.smsc.camel.system.PublishPduEventRouteType;
+import com.raitonbl.hermes.smsc.camel.system.datasource.DatasourceClient;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.PublishConfiguration;
 import com.raitonbl.hermes.smsc.config.messaging.MessagingSystem;
-import lombok.Setter;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
-@Setter
 @Component
+@ConditionalOnBean(value = DatasourceClient.class)
 public class PublishPduEventRouteBuilder extends RouteBuilder {
 
     private HermesConfiguration configuration;
 
     @Override
     public void configure() {
-        if (configuration.getServices() == null || configuration.getServices().isEmpty()) {
-            return;
-        }
         setRoute(PublishPduEventRouteType.DELIVERY_RECEIPT_ROUTE,
                 configuration.getPublishTo(), configuration.getPublishTo().getDeliveryReceiptChannel());
         setRoute(PublishPduEventRouteType.RECEIVED_SMS_REQUEST_ROUTE,

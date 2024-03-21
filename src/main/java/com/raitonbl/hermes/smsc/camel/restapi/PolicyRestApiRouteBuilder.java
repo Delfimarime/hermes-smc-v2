@@ -26,12 +26,8 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
     private static final String PUT_OPERATION_ID = "SetPolicies";
     private static final String GET_OPERATION_ID = "GetPolicies";
     private static final String SERVER_URI = "/policies";
-    private PolicyConfiguration configuration;
     @Override
     public void configure() {
-        if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
-            return;
-        }
         addGetOperationRoute();
         addPutOperationRoute();
     }
@@ -118,11 +114,6 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                             .setHeader(Exchange.CONTENT_TYPE,constant(MediaType.APPLICATION_JSON_VALUE))
                     .end()
                 .end();
-    }
-
-    @Inject
-    public void setConfiguration(HermesConfiguration configuration) {
-        this.configuration = configuration.getPolicyRepository();
     }
 
 }

@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.system.common;
+package com.raitonbl.hermes.smsc.camel.system.smpp;
 
 import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
 import org.apache.camel.builder.RouteBuilder;

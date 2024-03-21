@@ -5,7 +5,6 @@ import com.raitonbl.hermes.smsc.config.repository.AuthenticationType;
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
 import io.etcd.jetcd.Client;
 import org.apache.camel.component.etcd3.Etcd3Configuration;
-import org.apache.camel.component.etcd3.Etcd3Constants;
 import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.camel.model.language.SimpleExpression;
@@ -13,13 +12,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.SqsClientBuilder;
 
@@ -109,32 +103,6 @@ public class BeanFactory {
         Optional.ofNullable(System.getenv("AWS_ENDPOINT_URL"))
                 .map(URI::create).ifPresent(builder::endpointOverride);
         return builder.build();
-    }
-
-    @Bean(AWS_S3_CLIENT)
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(name = "spring.boot.hermes.rules-datasource.type", havingValue = "s3")
-    public S3Client getS3Client() {
-        Region region = Optional.ofNullable(System.getenv("DEFAULT_AWS_REGION"))
-                .map(Region::of).orElse(Region.AF_SOUTH_1);
-        S3ClientBuilder builder = S3Client.builder().region(region)
-                .credentialsProvider(DefaultCredentialsProvider.create());
-        Optional.ofNullable(System.getenv("AWS_ENDPOINT_URL"))
-                .map(URI::create).ifPresent(builder::endpointOverride);
-        return builder.build();
-    }
-
-    @ConditionalOnMissingBean
-    @Bean(RULES_REDIS_CONNECTION_FACTORY)
-    @ConditionalOnProperty(name = "spring.boot.hermes.rules-datasource.type", havingValue = "redis")
-    public RedisConnectionFactory redisConnectionFactory(HermesConfiguration configuration) {
-        RedisStandaloneConfiguration cfg = new RedisStandaloneConfiguration(
-                configuration.getPolicyRepository().getHost(), configuration.getPolicyRepository().getPort()
-        );
-        Optional.ofNullable(configuration.getPolicyRepository().getUsername()).ifPresent(cfg::setUsername);
-        Optional.ofNullable(configuration.getPolicyRepository().getPassword()).ifPresent(cfg::setPassword);
-        Optional.ofNullable(configuration.getPolicyRepository().getDatabase()).ifPresent(cfg::setDatabase);
-        return new LettuceConnectionFactory(cfg);
     }
 
 }

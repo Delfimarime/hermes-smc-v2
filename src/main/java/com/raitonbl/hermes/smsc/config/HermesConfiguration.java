@@ -21,7 +21,6 @@ public class HermesConfiguration {
     private String homeDirectory;
     @NotNull
     private PublishConfiguration publishTo;
-    private PolicyConfiguration policyRepository;
     private SendSmsListenerConfiguration listenTo;
     @NotEmpty
     private Map<String, SmppConfiguration> services;

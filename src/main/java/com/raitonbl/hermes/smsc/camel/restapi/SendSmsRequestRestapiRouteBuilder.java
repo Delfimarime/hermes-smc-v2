@@ -1,15 +1,12 @@
 package com.raitonbl.hermes.smsc.camel.restapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.raitonbl.hermes.smsc.camel.system.SmppConnectionNotFoundException;
 import com.raitonbl.hermes.smsc.camel.asyncapi.SendSmsRequest;
-import com.raitonbl.hermes.smsc.config.HermesConfiguration;
-import com.raitonbl.hermes.smsc.config.PolicyConfiguration;
-import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectionException;
-import com.raitonbl.hermes.smsc.config.policy.CannotSendSmsRequestException;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
-import jakarta.inject.Inject;
+import com.raitonbl.hermes.smsc.camel.system.smpp.SmppConnectionNotFoundException;
+import com.raitonbl.hermes.smsc.config.policy.CannotDetermineTargetSmppConnectionException;
+import com.raitonbl.hermes.smsc.config.policy.CannotSendSmsRequestException;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
@@ -26,12 +23,8 @@ import java.util.Optional;
 public class SendSmsRequestRestapiRouteBuilder extends RouteBuilder {
     private static final String CREATE_OPERATION_ID = "sendShortMessage";
     private static final String OPERATION_ROOT_PATH = "/short-messages";
-    private PolicyConfiguration configuration;
     @Override
     public void configure() {
-        if (configuration == null || Boolean.FALSE.equals(configuration.getExposeApi())) {
-            return;
-        }
         addSubmitSmsRequestRoute();
     }
 
@@ -116,11 +109,6 @@ public class SendSmsRequestRestapiRouteBuilder extends RouteBuilder {
                     .removeHeaders("*", Exchange.HTTP_RESPONSE_CODE, Exchange.CONTENT_TYPE)
                     .marshal().json(JsonLibrary.Jackson)
                 .end();
-    }
-
-    @Inject
-    public void setConfiguration(HermesConfiguration configuration) {
-        this.configuration = configuration.getPolicyRepository();
     }
 
     public static class HttpSendSmsRequest extends SendSmsRequest {
