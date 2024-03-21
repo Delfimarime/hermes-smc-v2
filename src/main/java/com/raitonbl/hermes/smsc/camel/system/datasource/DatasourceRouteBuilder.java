@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.Entity;
-import com.raitonbl.hermes.smsc.camel.system.EntityNotFoundException;
 import com.raitonbl.hermes.smsc.config.HermesConfiguration;
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
 import io.etcd.jetcd.ByteSequence;

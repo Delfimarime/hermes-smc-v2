@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.system;
+package com.raitonbl.hermes.smsc.camel.system.datasource;
 
 public class EntityNotFoundException extends RuntimeException{
     public EntityNotFoundException() {

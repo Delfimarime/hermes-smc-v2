@@ -3,7 +3,7 @@ package com.raitonbl.hermes.smsc.camel.system.smpp;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
-import com.raitonbl.hermes.smsc.camel.system.CircuitBreakerRouteFactory;
+import com.raitonbl.hermes.smsc.camel.system.common.CircuitBreakerRouteFactory;
 import com.raitonbl.hermes.smsc.camel.system.SmppConnectionListenerRouterBuilder;
 import com.raitonbl.hermes.smsc.camel.system.datasource.DatasourceEvent;
 import com.raitonbl.hermes.smsc.camel.system.datasource.EntityLifecycleListenerRouteFactory;
@@ -32,7 +32,6 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
         this.client.<SmppConnectionDefinition>findAll(RecordType.SMPP_CONNECTION)
                 .forEach(this::addSmppConnectionRoute);
-
         entityLifecycleListenerRouteFactory.create(this, RecordType.SMPP_CONNECTION)
                 .routeId(HermesSystemConstants.SMPP_CONNECTION_LIFECYCLE_MANAGER)
                 .choice()

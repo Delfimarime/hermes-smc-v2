@@ -1,15 +1,13 @@
-package com.raitonbl.hermes.smsc.camel.system;
+package com.raitonbl.hermes.smsc.camel.system.smpp;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
-import com.raitonbl.hermes.smsc.config.HermesConfiguration;
+import com.raitonbl.hermes.smsc.camel.system.datasource.DatasourceClient;
+import com.raitonbl.hermes.smsc.camel.system.datasource.RecordType;
 import com.raitonbl.hermes.smsc.config.PolicyConfiguration;
 import jakarta.inject.Inject;
-import lombok.Builder;
-import lombok.Getter;
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
@@ -19,7 +17,7 @@ import org.apache.camel.component.file.FileConstants;
 import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.camel.component.redis.RedisConstants;
-import org.apache.camel.model.ProcessorDefinition;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
@@ -33,18 +31,18 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@ConditionalOnBean(value = {DatasourceClient.class})
 public class PolicyRouteBuilder extends RouteBuilder {
     public static final String CACHE_NAME = "policies";
     public static final String POLICY_CACHE_KEY = "default";
     private ObjectMapper objectMapper;
     private PolicyConfiguration configuration;
 
+    private JCachePolicy jCachePolicy;
+
     @Override
     public void configure() {
-        if (this.configuration == null) {
-            return;
-        }
-        JCachePolicy jCachePolicy = new JCachePolicy();
+        this.jCachePolicy = new JCachePolicy();
         Long durationInCache = configuration.getTimeToLiveInCache();
         if (durationInCache != null) {
             MutableConfiguration<String, Object> configuration = new MutableConfiguration<>();
@@ -56,15 +54,12 @@ public class PolicyRouteBuilder extends RouteBuilder {
             Cache<String, Object> cache = cacheManager.createCache(CACHE_NAME, configuration);
             jCachePolicy.setCache(cache);
         }
-        PolicyOpts policyOpts = from(configuration);
-        this.setReadRoute(policyOpts, jCachePolicy);
-        if (Boolean.TRUE.equals(configuration.getExposeApi())) {
-            this.setUpdateRoute(policyOpts, jCachePolicy);
-        }
+        this.addGetPoliciesRoute();
+        this.addPutPoliciesRoute();
     }
 
-    private void setReadRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
-        ProcessorDefinition<?> routeDefinition = from(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+    private void addGetPoliciesRoute() {
+        from(HermesSystemConstants.DIRECT_TO_READ_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
                 .routeId( HermesSystemConstants.READ_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
                 .setBody(simple(null))
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
@@ -78,36 +73,43 @@ public class PolicyRouteBuilder extends RouteBuilder {
                     .otherwise()
                         .log(LoggingLevel.DEBUG, "Reading Policy from datasource[type=" +
                                 this.configuration.getType() + "]")
-                        .process(this.addHeader(opts.getReadHeaders()));
-        if (opts.getCatchableReadException() != null) {
-            routeDefinition.doTry()
-                    .to(this.configuration.toCamelURI())
-                    .doCatch(opts.getCatchableReadException())
-                    .log(opts.getOnCatchReadExceptionLog())
-                    .endDoTry();
-        } else {
-            routeDefinition.to(this.configuration.toCamelURI()).end();
-        }
-        routeDefinition.process(this.removeHeader(opts.getReadHeaders()))
-                .process(this::unmarshall)
-                .setHeader(JCacheConstants.ACTION, simple("PUT"))
-                .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
-                .toD("jcache://" + CACHE_NAME)
+                        .doTry()
+                            .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
+                            .to(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL)
+                        .endDoTry()
+                        .setHeader(JCacheConstants.ACTION, simple("PUT"))
+                        .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
+                        .toD("jcache://" + CACHE_NAME)
                 .endChoice()
+                .removeHeaders(
+                        HermesConstants.OBJECT_TYPE + "|" + JCacheConstants.ACTION + "|" + JCacheConstants.KEY
+                )
                 .end();
     }
 
-    private void setUpdateRoute(PolicyOpts opts, JCachePolicy jCachePolicy) {
+    private void addPutPoliciesRoute() {
         from(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
                 .routeId(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
+                .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
+                .choice()
+                    .when(header(HermesConstants.ENTITY_ID).isNull())
+                        .throwException(IllegalArgumentException.class,"missing header "+HermesConstants.ENTITY_ID)
+                .end()
+                .process(exchange -> {
+                    PolicyDefinition definition = exchange.getIn().getBody(PolicyDefinition.class);
+                    definition.setId(exchange.getIn().getHeader(HermesConstants.ENTITY_ID, String.class));
+                    definition.setVersion(null);
+                })
                 // Update datasource
-                .process(this.addHeader(opts.getWriteHeaders()))
-                .to(configuration.toPersistCamelURI())
+                .to(HermesSystemConstants.DIRECT_TO_REPOSITORY_UPDATE_BY_ID)
                 // Purge cache
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
                 .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
                 .policy(jCachePolicy)
                 .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
+                .removeHeaders(
+                        HermesConstants.OBJECT_TYPE + "|" + JCacheConstants.ACTION + "|" + JCacheConstants.KEY
+                )
                 .end();
     }
 
@@ -119,14 +121,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
         return (exchange -> h.forEach((k, v) -> exchange.getIn().removeHeader(k)));
     }
 
-    private void unmarshall(Exchange exchange) throws Exception {
-        String value = Optional.ofNullable(
-                exchange.getIn().getBody(String.class)
-        ).orElse("[]");
-        List<PolicyDefinition> collection = this.objectMapper.readValue(value, new TypeReference<>() {
-        });
-        exchange.getIn().setBody(collection);
-    }
+
 
     private PolicyOpts from(PolicyConfiguration cfg) {
         switch (cfg.getType()) {
@@ -159,26 +154,11 @@ public class PolicyRouteBuilder extends RouteBuilder {
         }
     }
 
-    @Inject
-    public void setConfiguration(HermesConfiguration configuration) {
-        this.configuration = configuration.getPolicyRepository();
-    }
 
     @Inject
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
-
-    @Getter
-    @Builder
-    public static class PolicyOpts {
-        private String readURI;
-        private String writeURI;
-        private String onCatchReadExceptionLog;
-        private Map<String, ValueBuilder> readHeaders;
-        private Map<String, ValueBuilder> writeHeaders;
-        private Class<? extends Exception> catchableReadException;
-    }
 
 }
