@@ -20,16 +20,29 @@ import java.util.Optional;
 
 @Component
 public class PolicyRestApiRouteBuilder extends RouteBuilder {
-    private static final String PUT_OPERATION_ID = "SetPolicies";
-    private static final String GET_OPERATION_ID = "GetPolicies";
+    private static final String ADD_POLICIES_OPERATION = "AddPolicy";
+    private static final String GET_POLICIES_OPERATION = "GetPolicies";
+    private static final String GET_POLICY_BY_ID_OPERATION = "GetPolicyById";
+    private static final String UPDATE_POLICY_BY_ID_OPERATION = "UpdatePolicyById";
+    private static final String DELETE_POLICY_BY_ID_OPERATION = "RemovePolicyById";
+
     private static final String SERVER_URI = "/policies";
     @Override
     public void configure() {
-        addGetOperationRoute();
-        addPutOperationRoute();
+        setAddPolicyOperationRoute();
+        setGetPolicyByIdOperationRoute();
+        setGetPoliciesOperationRoute();
+        setUpdatePolicyByIdOperationRoute();
+        setRemovePolicyOperationRoute();
+
     }
 
-    public void addPutOperationRoute() {
+    private void setAddPolicyOperationRoute() {
+    }
+
+    private void setGetPolicyByIdOperationRoute() {
+    }
+    public void setUpdatePolicyByIdOperationRoute() {
         from("rest:PUT:" + SERVER_URI + "?produces=" + MediaType.APPLICATION_JSON_VALUE)
                 .routeId(HermesSystemConstants.UPDATE_POLICIES_RESTAPI_ROUTE)
                 .doTry()
@@ -62,7 +75,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                     .log("${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNPROCESSABLE_ENTITY.value()))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(ZalandoProblemDefinition.unprocessableEntity(PUT_OPERATION_ID))
+                    .setBody(ZalandoProblemDefinition.unprocessableEntity(UPDATE_POLICY_BY_ID_OPERATION))
                 .doCatch(Exception.class)
                     .log("${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))
@@ -73,7 +86,10 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                 .end();
     }
 
-    private void addGetOperationRoute() {
+    private void setRemovePolicyOperationRoute() {
+    }
+
+    private void setGetPoliciesOperationRoute() {
         from("rest:GET:" + SERVER_URI + "?produces=" + MediaType.APPLICATION_JSON_VALUE)
                 .routeId(HermesSystemConstants.GET_ALL_POLICIES_RESTAPI_ROUTE)
                 .doTry()
@@ -91,7 +107,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                     .log("Exception caught ${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
                     .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                    .setBody(ZalandoProblemDefinition.unsupportedMediaType(GET_OPERATION_ID))
+                    .setBody(ZalandoProblemDefinition.unsupportedMediaType(GET_POLICIES_OPERATION))
                 .doCatch(Exception.class)
                     .log("Exception caught ${exception.stacktrace}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.INTERNAL_SERVER_ERROR.value()))
@@ -106,7 +122,7 @@ public class PolicyRestApiRouteBuilder extends RouteBuilder {
                             .marshal().yaml(YAMLLibrary.SnakeYAML)
                         .endChoice()
                         .otherwise()
-                            .setBody(ZalandoProblemDefinition.unsupportedMediaType(GET_OPERATION_ID))
+                            .setBody(ZalandoProblemDefinition.unsupportedMediaType(GET_POLICIES_OPERATION))
                             .marshal().json(JsonLibrary.Jackson)
                             .setHeader(Exchange.CONTENT_TYPE,constant(MediaType.APPLICATION_JSON_VALUE))
                     .end()
