@@ -5,7 +5,6 @@ import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import lombok.Builder;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
 import org.apache.camel.component.jsonvalidator.JsonValidationException;
 import org.apache.camel.component.rest.RestConstants;
 import org.apache.camel.model.CatchDefinition;
