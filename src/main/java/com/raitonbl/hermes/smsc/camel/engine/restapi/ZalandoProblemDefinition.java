@@ -32,6 +32,7 @@ public class ZalandoProblemDefinition {
                 .type("/problems/" + operationId + "/unprocessable-entity").build());
     }
 
+
     public static ValueBuilder forbidden(String operationId, Consumer<ZalandoProblemDefinition.ZalandoProblemDefinitionBuilder>c) {
         var builder = ZalandoProblemDefinition.builder().title("Operation not allowed").status(HttpStatus.FORBIDDEN.value())
                 .detail("Cannot proceed with the operation").type("/problems/" + operationId + "/forbidden");
@@ -44,5 +45,12 @@ public class ZalandoProblemDefinition {
                 .detail("Request doesn't match the specification")
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()).title("Unsupported Media Type")
                 .type("/problems/" + operationId + "/unsupported-media-type").build());
+    }
+
+    public static ValueBuilder unsupportedAcceptMediaType(String operationId) {
+        return org.apache.camel.builder.Builder.constant(ZalandoProblemDefinition.builder()
+                .detail("Request doesn't match the specification")
+                .status(HttpStatus.NOT_ACCEPTABLE.value()).title("Unsupported Accept Media Type")
+                .type("/problems/" + operationId + "/not-acceptable").build());
     }
 }
