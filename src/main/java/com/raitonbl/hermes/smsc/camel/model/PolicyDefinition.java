@@ -7,6 +7,7 @@ import lombok.*;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -19,19 +20,30 @@ public class PolicyDefinition extends Entity implements Serializable {
     private String name;
     @JsonProperty("description")
     private String description;
+    @JsonProperty("priority")
+    private Integer priority;
     @JsonProperty("spec")
     private Spec spec;
 
     public PolicyDefinition(String id, String name, String description, Spec spec) {
-        this(id, name, description, spec, null);
+        this(id, name, description, spec, null, null);
+    }
+
+    public PolicyDefinition(String id, String name, String description, Spec spec, Long version) {
+        this(id, name, description, spec, version, null);
     }
 
     @Builder
-    public PolicyDefinition(String id, String name, String description, Spec spec, Long version) {
+    public PolicyDefinition(String id, String name, String description, Spec spec, Long version, Integer priority) {
         super(id, version);
         this.name = name;
         this.description = description;
+        this.priority = priority;
         this.spec = spec;
+    }
+
+    public Integer getPriority() {
+        return Optional.ofNullable(priority).orElse(Integer.MAX_VALUE);
     }
 
     @Data
