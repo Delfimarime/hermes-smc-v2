@@ -7,8 +7,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jsonvalidator.JsonValidationException;
 import org.apache.camel.component.rest.RestConstants;
-import org.apache.camel.model.CatchDefinition;
+import org.apache.camel.model.TryDefinition;
 import org.apache.camel.model.ProcessorDefinition;
+import org.apache.camel.model.TryDefinition;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.dataformat.YAMLDataFormat;
 import org.apache.camel.model.dataformat.YAMLLibrary;
@@ -28,7 +29,7 @@ public abstract class RestapiRouteBuilder extends RouteBuilder {
     public static final String REST_API_OPERATION = HermesConstants.HEADER_PREFIX + "RestApiOperationId";
 
     @Builder
-    static class Opts {
+    protected static class Opts {
         String method;
         String serverURI;
         String operationId;
@@ -37,56 +38,64 @@ public abstract class RestapiRouteBuilder extends RouteBuilder {
         MediaType[] consumes;
     }
 
-    protected ProcessorDefinition<?> withGetEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec) {
-        return withGetEndpoint(builder, exec, null);
+    protected ProcessorDefinition<?> withGetEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec) {
+        return withGetEndpoint(opts, exec, null);
     }
 
-    protected ProcessorDefinition<?> withGetEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec, Consumer<CatchDefinition> onDoCatch) {
-        return withEndpoint(Opts.builder().method("GET").serverURI(builder.serverURI).operationId(builder.operationId).consumes(builder.consumes), exec, onDoCatch);
+    protected ProcessorDefinition<?> withGetEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
+        return withEndpointMethod("GET", Opts.builder().serverURI(opts.serverURI)
+                .operationId(opts.operationId).consumes(opts.consumes).build(), exec, onDoCatch);
     }
 
-    protected ProcessorDefinition<?> withPostEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec) {
-        return withGetEndpoint(builder, exec, null);
+    protected ProcessorDefinition<?> withPostEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec) {
+        return withEndpointMethod("POST", opts, exec);
     }
 
-    protected ProcessorDefinition<?> withPostEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec, Consumer<CatchDefinition> onDoCatch) {
-        return withEndpoint(Opts.builder().method("POST").schemaURI(builder.schemaURI).inputType(builder.inputType).serverURI(builder.serverURI).operationId(builder.operationId).consumes(builder.consumes), exec, onDoCatch);
+    protected ProcessorDefinition<?> withPostEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
+        return withEndpointMethod("POST", opts, exec, onDoCatch);
     }
 
-    protected ProcessorDefinition<?> withPatchEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec) {
-        return withPatchEndpoint(builder, exec, null);
+    protected ProcessorDefinition<?> withPatchEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec) {
+        return withEndpointMethod("PATCH", opts, exec);
     }
 
-    protected ProcessorDefinition<?> withPatchEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec, Consumer<CatchDefinition> onDoCatch) {
-        return withEndpoint(Opts.builder().method("PATCH").schemaURI(builder.schemaURI).inputType(builder.inputType).serverURI(builder.serverURI).operationId(builder.operationId).consumes(builder.consumes), exec, onDoCatch);
+    protected ProcessorDefinition<?> withPatchEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
+        return withEndpointMethod("PATCH", opts, exec, onDoCatch);
     }
 
-    protected ProcessorDefinition<?> withPutEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec) {
-        return withPutEndpoint(builder, exec, null);
+    protected ProcessorDefinition<?> withPutEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec) {
+        return withEndpointMethod("PUT", opts, exec);
     }
 
-    protected ProcessorDefinition<?> withPutEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec, Consumer<CatchDefinition> onDoCatch) {
-        return withEndpoint(Opts.builder().method("PATCH").schemaURI(builder.schemaURI).inputType(builder.inputType).serverURI(builder.serverURI).operationId(builder.operationId).consumes(builder.consumes), exec, onDoCatch);
+    protected ProcessorDefinition<?> withPutEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
+        return withEndpointMethod("PUT", opts, exec, onDoCatch);
     }
 
-    protected ProcessorDefinition<?> withDeleteEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec) {
-        return withDeleteEndpoint(builder, exec, null);
+    protected ProcessorDefinition<?> withDeleteEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec) {
+        return withEndpointMethod("DELETE", opts, exec);
     }
 
-    protected ProcessorDefinition<?> withDeleteEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec, Consumer<CatchDefinition> onDoCatch) {
-        return withEndpoint(Opts.builder().method("DELETE").schemaURI(builder.schemaURI).inputType(builder.inputType).serverURI(builder.serverURI).operationId(builder.operationId).consumes(builder.consumes), exec, onDoCatch);
+    protected ProcessorDefinition<?> withDeleteEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
+        return withEndpointMethod("DELETE", opts, exec, onDoCatch);
     }
 
+    protected ProcessorDefinition<?> withEndpointMethod(String method, Opts opts, Consumer<ProcessorDefinition<?>> exec) {
+        return withEndpointMethod(method, opts, exec, null);
+    }
 
+    protected ProcessorDefinition<?> withEndpointMethod(String method, Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
+        return withEndpoint(Opts.builder().method(method).schemaURI(opts.schemaURI).inputType(opts.inputType)
+                .serverURI(opts.serverURI).operationId(opts.operationId).consumes(opts.consumes).build(), exec, onDoCatch);
+    }
 
-    protected ProcessorDefinition<?> withEndpoint(Opts.OptsBuilder builder, Consumer<ProcessorDefinition<?>> exec, Consumer<CatchDefinition> onDoCatch) {
-        String method = builder.method;
-        String serverURI = builder.serverURI;
+    protected ProcessorDefinition<?> withEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
+        String method = opts.method;
+        String serverURI = opts.serverURI;
         ProcessorDefinition<?> definition = from("rest:" + method + ":" + serverURI)
-                .setHeader(REST_API_SCHEMA, constant(builder.schemaURI))
-                .setHeader(REST_API_OPERATION, constant(builder.operationId))
+                .setHeader(REST_API_SCHEMA, constant(opts.schemaURI))
+                .setHeader(REST_API_OPERATION, constant(opts.operationId))
                 .doTry()
-                    .process(exchange -> assertMediaType(builder, exchange))
+                    .process(exchange -> assertMediaType(opts, exchange))
                     .choice()
                         .when(header(REST_API_SCHEMA).isNotNull())
                             .choice()
@@ -96,8 +105,8 @@ public abstract class RestapiRouteBuilder extends RouteBuilder {
                                 .setBody(simple("${body}"))
                                 .convertBodyTo(String.class)
                             .end()
-                            .to("json-validator:classpath:schemas/" + builder.schemaURI + ".json?contentCache=true&failOnNullBody=true")
-                            .unmarshal().json(JsonLibrary.Jackson, builder.inputType)
+                            .to("json-validator:classpath:schemas/" + opts.schemaURI + ".json?contentCache=true&failOnNullBody=true")
+                            .unmarshal().json(JsonLibrary.Jackson, opts.inputType)
                     .end()
                     .enrich(HermesSystemConstants.OPENID_CONNECT_GET_AUTHENTICATION, (original, fromComponent) -> {
                         Optional.ofNullable(fromComponent.getIn().getBody(String.class))
@@ -105,33 +114,32 @@ public abstract class RestapiRouteBuilder extends RouteBuilder {
                         return original;
                     });
         exec.accept(definition);
-        CatchDefinition doCatchDefinition = definition
+        TryDefinition TryDefinition = definition
                     .endDoTry()
                     .doCatch(JsonValidationException.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNPROCESSABLE_ENTITY.value()))
                         .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                        .setBody(ZalandoProblemDefinition.unprocessableEntity(builder.operationId))
+                        .setBody(ZalandoProblemDefinition.unprocessableEntity(opts.operationId))
                     .doCatch(HttpMediaTypeNotSupportedException.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
                         .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                        .setBody(ZalandoProblemDefinition.unsupportedMediaType(builder.operationId))
+                        .setBody(ZalandoProblemDefinition.unsupportedMediaType(opts.operationId))
                     .doCatch(HttpMediaTypeNotAcceptableException.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
                         .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                        .setBody(ZalandoProblemDefinition.unsupportedAcceptMediaType(builder.operationId))
+                        .setBody(ZalandoProblemDefinition.unsupportedAcceptMediaType(opts.operationId))
                     .doCatch(Exception.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))
                         .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
-                        .setBody(ZalandoProblemDefinition.get())
-                    .endDoCatch();
+                        .setBody(ZalandoProblemDefinition.get());
 
-        Optional.ofNullable(onDoCatch).ifPresent(each -> each.accept(doCatchDefinition));
+        Optional.ofNullable(onDoCatch).ifPresent(each -> each.accept(TryDefinition));
 
-        return doCatchDefinition
+        return TryDefinition
                 .endDoTry()
                 .doFinally()
                     .choice()
@@ -146,12 +154,12 @@ public abstract class RestapiRouteBuilder extends RouteBuilder {
                 .end();
     }
 
-    private void assertMediaType(Opts.OptsBuilder builder, Exchange exchange) {
+    private void assertMediaType(Opts opts, Exchange exchange) {
         String contentType = Optional
                 .ofNullable(exchange.getIn().getHeader(RestConstants.CONTENT_TYPE, String.class))
                 .orElse(MediaType.APPLICATION_JSON_VALUE);
-        List<MediaType> consumes = builder.consumes == null ?
-                List.of(MediaType.APPLICATION_JSON) : Arrays.asList(builder.consumes);
+        List<MediaType> consumes = opts.consumes == null ?
+                List.of(MediaType.APPLICATION_JSON) : Arrays.asList(opts.consumes);
         try {
 
             MediaType mediaType = MediaType.valueOf(contentType);

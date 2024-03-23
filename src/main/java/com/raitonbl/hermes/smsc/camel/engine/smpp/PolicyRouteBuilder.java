@@ -164,8 +164,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addUpdateByIdRoute() {
-        from(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
-                .routeId(HermesSystemConstants.DIRECT_TO_UPDATE_POLICIES_ON_DATASOURCE_ROUTE)
+        from(HermesSystemConstants.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
+                .routeId(HermesSystemConstants.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
                 .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
                 .filter(header(HermesConstants.ENTITY_ID).isNotNull())
                 .process(exchange -> {

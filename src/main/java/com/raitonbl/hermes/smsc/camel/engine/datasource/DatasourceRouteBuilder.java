@@ -81,9 +81,8 @@ public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceCl
                         .when(header(HermesConstants.ENTITY_ID).isNotNull())
                             .throwException(IllegalArgumentException.class,"${headers."+HermesConstants.ENTITY_ID+"}")
                     .end()
-                    .process(exchange->{
-                        exchange.getIn().setHeader(HermesConstants.ENTITY_ID, UUID.randomUUID().toString());
-                    })
+                    .process(exchange-> exchange.getIn()
+                            .setHeader(HermesConstants.ENTITY_ID, UUID.randomUUID().toString()))
                     .setHeader(Etcd3Constants.ETCD_PATH, constant(configuration.getDefaultPath()))
                     .setHeader(Etcd3Constants.ETCD_PATH, simple(DETERMINE_ETCD_KEY_EXPRESSION))
                     .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_SET))
