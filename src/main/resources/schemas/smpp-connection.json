@@ -1,0 +1,217 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minimumLength": 1
+    },
+    "alias": {
+      "type": "string",
+      "minimumLength": 3
+    },
+    "description": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "redirect_to": {
+          "type": "string"
+        },
+        "npi": {
+          "type": "integer"
+        },
+        "connection_type": {
+          "enum": [
+            "TRANSMITTER",
+            "TRANSCEIVER",
+            "RECEIVER"
+          ]
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "verify_tls": {
+          "type": "boolean",
+          "default": true
+        },
+        "username": {
+          "type": "string",
+          "pattern": "^(\\$\\{integrations\\.[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+\\}|\\$\\{os\\.environment\\.[a-zA-Z0-9_-]+\\})$\n"
+        },
+        "password": {
+          "type": "string",
+          "pattern": "^(\\$\\{integrations\\.[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+\\}|\\$\\{os\\.environment\\.[a-zA-Z0-9_-]+\\})$\n"
+        },
+        "hostname": {
+          "type": "string",
+          "format": "hostname"
+        },
+        "system_id": {
+          "type": "string"
+        },
+        "destination_address": {
+          "type": "string"
+        },
+        "encoding": {
+          "type": "string"
+        },
+        "alphabet": {
+          "enum": [
+            "DEFAULT_ALPHABET_4",
+            "EIGHT_BIT_ALPHABET",
+            "UCS2_ALPHABET"
+          ]
+        },
+        "system_type": {
+          "type": "string"
+        },
+        "source_address": {
+          "type": "string"
+        },
+        "data_coding": {
+          "type": "integer"
+        },
+        "destination_address_npi": {
+          "type": "integer"
+        },
+        "destination_address_ton": {
+          "type": "integer"
+        },
+        "address_range": {
+          "type": "string"
+        },
+        "delivery_type": {
+          "enum": [
+            "NO_DELIVERY",
+            "ALWAYS",
+            "ON_FAILURE"
+          ]
+        },
+        "max_reconnect": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_address_npi": {
+          "type": "integer"
+        },
+        "source_address_ton": {
+          "type": "integer"
+        },
+        "reconnect_delay": {
+          "type": "integer"
+        },
+        "splitting_policy": {
+          "enum": [
+            "ALLOW",
+            "REJECT",
+            "TRUNCATE"
+          ]
+        },
+        "enquire_link_timer": {
+          "type": "integer"
+        },
+        "transaction_timer": {
+          "type": "integer"
+        },
+        "number_of_write_queues": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "number_of_read_threads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wait_single_delivery_report": {
+          "type": "boolean"
+        },
+        "initial_reconnect_delay": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "circuit_breaker": {
+          "type": "object",
+          "properties": {
+            "timestamp_unit": {
+              "enum": [
+                "NANOSECONDS",
+                "MICROSECONDS",
+                "MILLISECONDS",
+                "SECONDS",
+                "MINUTES",
+                "HOURS",
+                "DAYS"
+              ]
+            },
+            "failure_rate_threshold": {
+              "type": "number"
+            },
+            "minimum_number_of_calls": {
+              "type": "integer"
+            },
+            "writable_stack_trace_enabled": {
+              "type": "boolean"
+            },
+            "permitted_number_of_calls_in_half_open_state": {
+              "type": "integer"
+            },
+            "sliding_window_size": {
+              "type": "integer"
+            },
+            "wait_duration_in_open_state": {
+              "type": "integer"
+            },
+            "auto_transition_from_open_to_half_open": {
+              "type": "boolean",
+              "default": true
+            },
+            "slow_call_rate_threshold": {
+              "type": "number"
+            },
+            "slow_call_duration_threshold": {
+              "type": "integer"
+            },
+            "max_wait_duration_in_half_open_state": {
+              "type": "integer"
+            },
+            "create_wait_interval_function_counter": {
+              "type": "integer"
+            },
+            "sliding_window_type": {
+              "enum": [
+                "TIME_BASED",
+                "COUNT_BASED"
+              ]
+            }
+          },
+          "required": [
+            "timestamp_unit",
+            "failure_rate_threshold",
+            "minimum_number_of_calls"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "connection_type",
+        "hostname",
+        "system_id",
+        "port"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "name",
+    "spec"
+  ],
+  "additionalProperties": false
+}

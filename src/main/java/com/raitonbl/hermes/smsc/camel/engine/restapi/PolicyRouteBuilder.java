@@ -61,13 +61,14 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
     }
 
     private void withRemovePolicyById() {
-        withGetEndpoint(Opts.builder()
+        withDeleteEndpoint(Opts.builder()
                         .serverURI(RESOURCE_URI).operationId(HermesSystemConstants.RestApi.DELETE_POLICY_BY_ID_OPERATION)
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
                         .build(),
                 routeDefinition -> routeDefinition
                         .to(HermesSystemConstants.Policies.DIRECT_TO_DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE))
-                .routeId(HermesSystemConstants.RestApi.REMOVE_POLICY_RESTAPI_ROUTE);
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.NO_CONTENT.value())
+                ).routeId(HermesSystemConstants.RestApi.REMOVE_POLICY_RESTAPI_ROUTE);
     }
 
     private void withGetPolicies() {
