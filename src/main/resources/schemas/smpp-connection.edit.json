@@ -5,10 +5,6 @@
       "type": "string",
       "minimumLength": 1
     },
-    "alias": {
-      "type": "string",
-      "minimumLength": 3
-    },
     "description": {
       "type": "string"
     },
@@ -211,7 +207,6 @@
   },
   "required": [
     "name",
-    "alias",
     "spec"
   ],
   "additionalProperties": false

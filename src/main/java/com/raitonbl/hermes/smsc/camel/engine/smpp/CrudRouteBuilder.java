@@ -18,7 +18,7 @@ public abstract class CrudRouteBuilder extends RouteBuilder {
     protected JCachePolicy jCachePolicy;
 
     @Override
-    public void configure() {
+    public void configure() throws Exception{
         if(this.jCachePolicy == null){
             this.jCachePolicy = getjCachePolicy();
         }
@@ -49,7 +49,7 @@ public abstract class CrudRouteBuilder extends RouteBuilder {
                     })
                     .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_CREATE)
                 .endDoTry();
-        whenCacheIO(tryDefinition);
+        withCacheEvict(tryDefinition);
         tryDefinition.end();
     }
 
@@ -60,7 +60,7 @@ public abstract class CrudRouteBuilder extends RouteBuilder {
                 .setBody(simple(null));
 
         if (jCachePolicy != null) {
-             routeDefinition.setHeader(JCacheConstants.KEY, constant(absoluteCacheKeyFrom("*")))
+             routeDefinition.setHeader(JCacheConstants.KEY, constant(namespaceCacheKey("*")))
                     .setHeader(JCacheConstants.ACTION, constant("GET"))
                     .policy(jCachePolicy)
                     .to("jcache://" + jCachePolicy.getCacheName() + "?createCacheIfNotExists=true")
@@ -100,16 +100,16 @@ public abstract class CrudRouteBuilder extends RouteBuilder {
 
         if (jCachePolicy != null) {
             routeDefinition
+                    .policy(jCachePolicy)
                     .setHeader(JCacheConstants.ACTION, constant("GET"))
                     .process(exchange -> exchange.getIn().setHeader(JCacheConstants.KEY,
-                            absoluteCacheKeyFrom(cacheKeyFrom(exchange.getIn().getBody(getType().javaType)))))
-                    .policy(jCachePolicy)
+                            namespaceCacheKey(cacheKeyFrom(exchange.getIn().getBody(getType().javaType)))))
                     .to("jcache://" + jCachePolicy.getCacheName() + "?createCacheIfNotExists=true")
                     .choice()
-                        .when(body().isNotNull())
-                            .log(LoggingLevel.DEBUG, "Retrieving item from jcache[key=${headers." + JCacheConstants.KEY + "}]")
-                        .otherwise()
-                            .log(LoggingLevel.DEBUG, "Fetching item from datasource");
+                    .when(body().isNotNull())
+                    .log(LoggingLevel.DEBUG, "Retrieving item from jcache[key=${headers." + JCacheConstants.KEY + "}]")
+                    .otherwise()
+                    .log(LoggingLevel.DEBUG, "Fetching item from datasource");
         }
         routeDefinition
                 .doTry()
@@ -135,7 +135,7 @@ public abstract class CrudRouteBuilder extends RouteBuilder {
                     exchange.getIn().setBody(definition);
                 })
                 .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_UPDATE_BY_ID);
-        whenCacheIO(routeDefinition);
+        withCacheEvict(routeDefinition);
         routeDefinition.end();
     }
 
@@ -148,19 +148,19 @@ public abstract class CrudRouteBuilder extends RouteBuilder {
                     .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
                     .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_DELETE_BY_ID)
                 .endDoTry();
-        whenCacheIO(routeDefinition);
+        withCacheEvict(routeDefinition);
         routeDefinition.end();
     }
 
-    private void whenCacheIO(ProcessorDefinition<?> routeDefinition){
+    private void withCacheEvict(ProcessorDefinition<?> routeDefinition){
         if (jCachePolicy != null) {
-            routeDefinition.setHeader(JCacheConstants.KEY, constant(absoluteCacheKeyFrom("*")))
+            routeDefinition.setHeader(JCacheConstants.KEY, constant(namespaceCacheKey("*")))
                     .setHeader(JCacheConstants.ACTION, constant("REMOVE"))
                     .policy(jCachePolicy)
                     .to("jcache://" + jCachePolicy.getCacheName() + "?createCacheIfNotExists=true")
                     .setHeader(JCacheConstants.ACTION, constant("REMOVE"))
                     .process(exchange -> exchange.getIn().setHeader(JCacheConstants.KEY,
-                            absoluteCacheKeyFrom(cacheKeyFrom(exchange.getIn().getBody(getType().javaType)))))
+                            namespaceCacheKey(cacheKeyFrom(exchange.getIn().getBody(getType().javaType)))))
                     .to("jcache://" + jCachePolicy.getCacheName() + "?createCacheIfNotExists=true")
                     .removeHeaders(
                             HermesConstants.OBJECT_TYPE + "|" + JCacheConstants.ACTION + "|" + JCacheConstants.KEY
@@ -168,10 +168,10 @@ public abstract class CrudRouteBuilder extends RouteBuilder {
         }
     }
 
-    protected String absoluteCacheKeyFrom(String name) {
+    protected String namespaceCacheKey(String name) {
         String key = getType().name();
         if (name != null) {
-            key += "_" + name;
+            key += "/" + name;
         }
         return key;
     }

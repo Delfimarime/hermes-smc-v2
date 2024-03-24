@@ -12,7 +12,6 @@ import lombok.Builder;
 import lombok.Getter;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jcache.JCacheConstants;
 import org.apache.camel.component.jcache.policy.JCachePolicy;
 import org.apache.commons.lang.StringUtils;
@@ -36,48 +35,51 @@ import java.util.stream.Collectors;
 
 @Component
 @ConditionalOnBean(value = {DatasourceClient.class})
-public class PolicyRouteBuilder extends RouteBuilder {
-    public static final String POLICY_CACHE_KEY = "default";
-    public static final String CACHE_NAME = PolicyDefinition.class.getName();
+public class PolicyRouteBuilder extends CrudRouteBuilder {
     private static final Object DECIDER_LOCK = new Object();
     private static final String POLICY_CACHE_HEADER = HermesConstants.HEADER_PREFIX + PolicyRouteBuilder.class.getName();
     private static final String CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE = HermesSystemConstants.INTERNAL_ROUTE_PREFIX + "POLICY_CACHE_FACTORY";
     private static final String DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE = "direct:" + CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE;
     private static final  String POLICY_SMPP_CONNECTION_LOOKUP_ROUTE = HermesSystemConstants.INTERNAL_ROUTE_PREFIX+ "POLICY_OBSERVE_SMPP_CONNECTION";
-    private JCachePolicy jCachePolicy;
+    public static final String JCACHE_NAME =  PolicyRouteBuilder.class.getName();
     private List<PolicyRouteBuilder.Policy> computedPolicies = null;
     private EntityLifecycleListenerRouteFactory entityLifecycleListenerRouteFactory;
 
     @Override
-    public void configure() {
-        if (this.jCachePolicy == null) {
-            this.jCachePolicy = new JCachePolicy();
-            MutableConfiguration<String, Object> configuration = new MutableConfiguration<>();
-            configuration.setTypes(String.class, Object.class);
-            configuration
-                    .setExpiryPolicyFactory(CreatedExpiryPolicy
-                            .factoryOf(new Duration(TimeUnit.SECONDS, 60)));
-            CacheManager cacheManager = Caching.getCachingProvider().getCacheManager();
-            Cache<String, Object> cache = cacheManager.createCache(CACHE_NAME, configuration);
-            jCachePolicy.setCache(cache);
-        }
-        this.addCreateRoute();
-        this.addFindAllRoute();
-        this.addFindByIdRoute();
-        this.addUpdateByIdRoute();
-        this.addDeleteByIdRoute();
+    public void configure() throws Exception {
+        super.configure();
         this.initSmppDeciderRoute();
         this.initListeners();
     }
 
+    @Override
+    protected RecordType getType() {
+        return RecordType.POLICY;
+    }
+
+    @Override
+    protected JCachePolicy getjCachePolicy() {
+        JCachePolicy jCachePolicy = new JCachePolicy();
+        MutableConfiguration<String, Object> configuration = new MutableConfiguration<>();
+        configuration.setTypes(String.class, Object.class);
+        configuration
+                .setExpiryPolicyFactory(CreatedExpiryPolicy
+                        .factoryOf(new Duration(TimeUnit.SECONDS, 60)));
+        CacheManager cacheManager = Caching.getCachingProvider().getCacheManager();
+        Cache<String, Object> cache = cacheManager.createCache(JCACHE_NAME, configuration);
+        jCachePolicy.setCache(cache);
+        jCachePolicy.setCacheName(JCACHE_NAME);
+        return jCachePolicy;
+    }
+
     private void initListeners() {
-        this.entityLifecycleListenerRouteFactory.create(this, RecordType.POLICY)
+        this.entityLifecycleListenerRouteFactory.create(this, getType())
                 .routeId(HermesSystemConstants.CrudOperations.POLICY_LIFECYCLE_MANAGER_ROUTE)
-                .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
-                .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
+                .setHeader(JCacheConstants.ACTION, constant("REMOVE"))
+                .setHeader(JCacheConstants.KEY, constant(namespaceCacheKey("*")))
                 .policy(this.jCachePolicy)
-                .log(LoggingLevel.DEBUG,"Removing Entry{\"cache_name\":\""+CACHE_NAME+"\",\"key\":\"${headers."+JCacheConstants.KEY+"}\"}")
-                .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
+                .log(LoggingLevel.DEBUG,"Removing Entry{\"cache_name\":\""+ JCACHE_NAME +"\",\"key\":\"${headers."+JCacheConstants.KEY+"}\"}")
+                .to("jcache://" + JCACHE_NAME + "?createCacheIfNotExists=true")
                 .log(LoggingLevel.DEBUG,"Triggering policies reconstruction")
                 .to(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
                 .removeHeaders(
@@ -94,120 +96,6 @@ public class PolicyRouteBuilder extends RouteBuilder {
                 .end();
     }
 
-    private void addCreateRoute() {
-        from(HermesSystemConstants.CrudOperations.DIRECT_TO_ADD_POLICIES)
-                .routeId( HermesSystemConstants.CrudOperations.ADD_POLICY)
-                .filter(header(HermesConstants.ENTITY_ID).isNull())
-                .doTry()
-                    .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                    .process(exchange -> {
-                        PolicyDefinition definition = exchange.getIn().getBody(PolicyDefinition.class);
-                        definition.setVersion(null);
-                        definition.setId(UUID.randomUUID().toString());
-                        exchange.getIn().setBody(definition);
-                    })
-                    .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_CREATE)
-                .endDoTry()
-                .doFinally()
-                    .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
-                    .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
-                    .policy(jCachePolicy)
-                    .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
-                    .removeHeaders(
-                            HermesConstants.OBJECT_TYPE + "|" + JCacheConstants.ACTION + "|" + JCacheConstants.KEY
-                    )
-                .end()
-                .end();
-    }
-
-    private void addFindAllRoute() {
-        from(HermesSystemConstants.CrudOperations.DIRECT_TO_GET_POLICIES)
-                .routeId( HermesSystemConstants.CrudOperations.GET_POLICIES)
-                .setBody(simple(null))
-                .setHeader(JCacheConstants.ACTION, simple("GET"))
-                .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
-                .policy(jCachePolicy)
-                .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
-                .choice()
-                    .when(body().isNotNull())
-                        .log(LoggingLevel.DEBUG, "Retrieving policies from jcache[key=${headers." + JCacheConstants.KEY + "}]")
-                    .otherwise()
-                        .log(LoggingLevel.DEBUG, "Fetching policies from datasource")
-                        .doTry()
-                            .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                            .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_FIND_ALL)
-                        .endDoTry()
-                        .setHeader(JCacheConstants.ACTION, simple("PUT"))
-                        .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
-                        .toD("jcache://" + CACHE_NAME)
-                .endChoice()
-                .removeHeaders(
-                        HermesConstants.OBJECT_TYPE + "|" + JCacheConstants.ACTION + "|" + JCacheConstants.KEY
-                )
-                .end();
-    }
-
-    private void addFindByIdRoute() {
-        from(HermesSystemConstants.CrudOperations.DIRECT_TO_FIND_POLICY_BY_ID)
-                .routeId( HermesSystemConstants.CrudOperations.FIND_POLICY_BY_ID)
-                .filter(header(HermesConstants.ENTITY_ID).isNotNull())
-                .doTry()
-                    .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                    .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_FIND_BY_ID)
-                .endDoTry()
-                .doFinally()
-                .removeHeaders(
-                        HermesConstants.OBJECT_TYPE
-                )
-                .end()
-                .end();
-    }
-
-    private void addUpdateByIdRoute() {
-        from(HermesSystemConstants.CrudOperations.DIRECT_TO_EDIT_POLICY)
-                .routeId(HermesSystemConstants.CrudOperations.DIRECT_TO_EDIT_POLICY)
-                .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                .filter(header(HermesConstants.ENTITY_ID).isNotNull())
-                .process(exchange -> {
-                    PolicyDefinition definition = exchange.getIn().getBody(PolicyDefinition.class);
-                    definition.setVersion(null);
-                    definition.setId(exchange.getIn().getHeader(HermesConstants.ENTITY_ID, String.class));
-                    exchange.getIn().setBody(definition);
-                })
-                // Update datasource
-                .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_UPDATE_BY_ID)
-                // Purge cache
-                .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
-                .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
-                .policy(jCachePolicy)
-                .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
-                .removeHeaders(
-                        HermesConstants.OBJECT_TYPE + "|" + JCacheConstants.ACTION + "|" + JCacheConstants.KEY
-                )
-                .end();
-    }
-
-    private void addDeleteByIdRoute() {
-        from(HermesSystemConstants.CrudOperations.DIRECT_TO_DELETE_POLICY_BY_ID)
-                .routeId( HermesSystemConstants.CrudOperations.DELETE_POLICY_BY_ID)
-                .filter(header(HermesConstants.ENTITY_ID).isNotNull())
-                .doTry()
-                    .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                    .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_DELETE_BY_ID)
-                .endDoTry()
-                .doFinally()
-                    // Purge cache
-                    .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
-                    .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
-                    .policy(jCachePolicy)
-                    .to("jcache://" + CACHE_NAME + "?createCacheIfNotExists=true")
-                    .removeHeaders(
-                            HermesConstants.OBJECT_TYPE + "|" + JCacheConstants.ACTION + "|" + JCacheConstants.KEY
-                    )
-                .end()
-                .end();
-    }
-
     private void initSmppDeciderRoute() {
         from(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
                 .routeId(CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
@@ -215,7 +103,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
                     original.getIn()
                             .setHeader(HermesConstants.POLICIES, fromComponent.getIn().getBody());
                     return original;
-                }).enrich(HermesSystemConstants.DIRECT_TO_GET_ALL_SMPP_CONNECTIONS_ROUTE, (original, fromComponent) -> {
+                }).enrich(HermesSystemConstants.CrudOperations.GET_SMPP_CONNECTIONS, (original, fromComponent) -> {
                     original.getIn()
                             .setHeader(HermesConstants.REPOSITORY_RETURN_OBJECT,
                                     fromComponent.getIn().getBody());

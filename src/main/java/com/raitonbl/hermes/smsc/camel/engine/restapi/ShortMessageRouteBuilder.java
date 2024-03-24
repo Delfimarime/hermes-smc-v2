@@ -38,7 +38,7 @@ public class ShortMessageRouteBuilder extends ApiRouteBuilder {
                                 .setFrom(exchange.getIn().getHeader(HermesConstants.AUTHORIZATION, String.class)))
                         .choice()
                             .when(simple("{body.smppConnection}").isNotNull())
-                                .enrich(HermesSystemConstants.DIRECT_TO_FIND_SMPP_CONNECTION_BY_ID, (original, fromComponent) -> {
+                                .enrich(HermesSystemConstants.CrudOperations.DIRECT_TO_FIND_SMPP_CONNECTION_BY_ID, (original, fromComponent) -> {
                                     Optional.ofNullable(fromComponent.getIn().getBody())
                                             .ifPresent(definition -> original.getIn()
                                                     .setHeader(HermesConstants.SMPP_CONNECTION, definition));

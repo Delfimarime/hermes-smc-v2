@@ -40,7 +40,7 @@ public class TestBeanFactory {
 
     public static void setPolicy(PolicyDefinition... definition) {
         Optional.ofNullable(
-                Caching.getCachingProvider().getCacheManager().getCache(PolicyRouteBuilder.CACHE_NAME)
+                Caching.getCachingProvider().getCacheManager().getCache(PolicyRouteBuilder.JCACHE_NAME)
         ).ifPresent(Cache::clear);
         TestBeanFactory.policies = definition == null ? Collections.emptyList() : Arrays.asList(definition);
     }

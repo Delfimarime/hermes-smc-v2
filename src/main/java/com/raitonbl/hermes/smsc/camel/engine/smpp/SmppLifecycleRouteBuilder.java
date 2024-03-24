@@ -2,14 +2,13 @@ package com.raitonbl.hermes.smsc.camel.engine.smpp;
 
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
-import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
-import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceEvent;
-import com.raitonbl.hermes.smsc.camel.engine.datasource.EntityLifecycleListenerRouteFactory;
 import com.raitonbl.hermes.smsc.camel.common.RecordType;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceClient;
+import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceEvent;
+import com.raitonbl.hermes.smsc.camel.engine.datasource.EntityLifecycleListenerRouteFactory;
+import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.smpp.SmppConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -19,39 +18,25 @@ import java.util.function.Consumer;
 
 @Component
 @ConditionalOnBean(value = {DatasourceClient.class, EntityLifecycleListenerRouteFactory.class})
-public class SmppLifecycleRouteBuilder extends RouteBuilder {
+public class SmppLifecycleRouteBuilder extends CrudRouteBuilder {
     private static final Object LOCK = new Object();
     private DatasourceClient client;
     private EntityLifecycleListenerRouteFactory entityLifecycleListenerRouteFactory;
 
     @Override
     public void configure() throws Exception {
-        this.client.<SmppConnectionDefinition>findAll(RecordType.SMPP_CONNECTION).forEach(this::addSmppConnectionRoute);
+        super.configure();
+        this.client.<SmppConnectionDefinition>findAll(getType()).forEach(this::addSmppConnectionRoute);
         initListener();
-        withAddSmppConnection();
-        withGetSmppConnection();
-        withGetSmppConnections();
-        withRemoveSmppConnection();
-        withConfigureSmppConnection();
     }
 
-    private void withAddSmppConnection(){
-    }
-
-    private void withGetSmppConnection(){
-    }
-
-    private void withConfigureSmppConnection(){
-    }
-
-    private void withRemoveSmppConnection(){
-    }
-
-    private void withGetSmppConnections(){
+    @Override
+    protected RecordType getType() {
+        return RecordType.SMPP_CONNECTION;
     }
 
     private void initListener(){
-        this.entityLifecycleListenerRouteFactory.create(this, RecordType.SMPP_CONNECTION)
+        this.entityLifecycleListenerRouteFactory.create(this, getType())
                 .routeId(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_LIFECYCLE_MANAGER_ROUTE)
                 .choice()
                     .when(simple("${body.type}").isEqualTo(DatasourceEvent.EventType.SET))
