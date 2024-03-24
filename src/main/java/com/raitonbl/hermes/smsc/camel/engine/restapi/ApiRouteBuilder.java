@@ -9,7 +9,6 @@ import org.apache.camel.component.jsonvalidator.JsonValidationException;
 import org.apache.camel.component.rest.RestConstants;
 import org.apache.camel.model.TryDefinition;
 import org.apache.camel.model.ProcessorDefinition;
-import org.apache.camel.model.TryDefinition;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.dataformat.YAMLDataFormat;
 import org.apache.camel.model.dataformat.YAMLLibrary;
@@ -24,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public abstract class RestapiRouteBuilder extends RouteBuilder {
+public abstract class ApiRouteBuilder extends RouteBuilder {
     public static final String REST_API_SCHEMA = HermesConstants.HEADER_PREFIX + "RestApiSchema";
     public static final String REST_API_OPERATION = HermesConstants.HEADER_PREFIX + "RestApiOperationId";
 
@@ -108,7 +107,7 @@ public abstract class RestapiRouteBuilder extends RouteBuilder {
                             .to("json-validator:classpath:schemas/" + opts.schemaURI + ".json?contentCache=true&failOnNullBody=true")
                             .unmarshal().json(JsonLibrary.Jackson, opts.inputType)
                     .end()
-                    .enrich(HermesSystemConstants.OPENID_CONNECT_GET_AUTHENTICATION, (original, fromComponent) -> {
+                    .enrich(HermesSystemConstants.Security.OPENID_CONNECT_GET_AUTHENTICATION, (original, fromComponent) -> {
                         Optional.ofNullable(fromComponent.getIn().getBody(String.class))
                                 .ifPresent(value -> original.getIn().setHeader(HermesConstants.AUTHORIZATION, value));
                         return original;

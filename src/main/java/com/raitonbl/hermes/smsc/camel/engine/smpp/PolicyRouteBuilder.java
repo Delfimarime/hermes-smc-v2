@@ -72,7 +72,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
 
     private void initListeners() {
         this.entityLifecycleListenerRouteFactory.create(this, RecordType.POLICY)
-                .routeId(HermesSystemConstants.POLICY_LIFECYCLE_MANAGER_ROUTE)
+                .routeId(HermesSystemConstants.Policies.POLICY_LIFECYCLE_MANAGER_ROUTE)
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
                 .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
                 .policy(this.jCachePolicy)
@@ -95,8 +95,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addCreateRoute() {
-        from(HermesSystemConstants.DIRECT_TO_ADD_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
-                .routeId( HermesSystemConstants.ADD_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+        from(HermesSystemConstants.Policies.DIRECT_TO_ADD_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+                .routeId( HermesSystemConstants.Policies.ADD_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
                 .filter(header(HermesConstants.ENTITY_ID).isNull())
                 .doTry()
                     .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
@@ -106,7 +106,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
                         definition.setId(UUID.randomUUID().toString());
                         exchange.getIn().setBody(definition);
                     })
-                    .to(HermesSystemConstants.DIRECT_TO_REPOSITORY_CREATE)
+                    .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_CREATE)
                 .endDoTry()
                 .doFinally()
                     .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
@@ -121,8 +121,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addFindAllRoute() {
-        from(HermesSystemConstants.DIRECT_TO_FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
-                .routeId( HermesSystemConstants.FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+        from(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+                .routeId( HermesSystemConstants.Policies.FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
                 .setBody(simple(null))
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
@@ -135,7 +135,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.DEBUG, "Fetching policies from datasource")
                         .doTry()
                             .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                            .to(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL)
+                            .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_FIND_ALL)
                         .endDoTry()
                         .setHeader(JCacheConstants.ACTION, simple("PUT"))
                         .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
@@ -148,12 +148,12 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addFindByIdRoute() {
-        from(HermesSystemConstants.DIRECT_TO_FIND_POLICY_BY_ID_FROM_DATASOURCE_SYSTEM_ROUTE)
-                .routeId( HermesSystemConstants.FIND_POLICY_BY_ID_FROM_DATASOURCE_SYSTEM_ROUTE)
+        from(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICY_BY_ID_FROM_DATASOURCE_SYSTEM_ROUTE)
+                .routeId( HermesSystemConstants.Policies.FIND_POLICY_BY_ID_FROM_DATASOURCE_SYSTEM_ROUTE)
                 .filter(header(HermesConstants.ENTITY_ID).isNotNull())
                 .doTry()
                     .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                    .to(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_BY_ID)
+                    .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_FIND_BY_ID)
                 .endDoTry()
                 .doFinally()
                 .removeHeaders(
@@ -164,8 +164,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addUpdateByIdRoute() {
-        from(HermesSystemConstants.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
-                .routeId(HermesSystemConstants.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
+        from(HermesSystemConstants.Policies.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
+                .routeId(HermesSystemConstants.Policies.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
                 .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
                 .filter(header(HermesConstants.ENTITY_ID).isNotNull())
                 .process(exchange -> {
@@ -175,7 +175,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
                     exchange.getIn().setBody(definition);
                 })
                 // Update datasource
-                .to(HermesSystemConstants.DIRECT_TO_REPOSITORY_UPDATE_BY_ID)
+                .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_UPDATE_BY_ID)
                 // Purge cache
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
                 .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
@@ -188,12 +188,12 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addDeleteByIdRoute() {
-        from(HermesSystemConstants.DIRECT_TO_DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE)
-                .routeId( HermesSystemConstants.DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE)
+        from(HermesSystemConstants.Policies.DIRECT_TO_DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE)
+                .routeId( HermesSystemConstants.Policies.DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE)
                 .filter(header(HermesConstants.ENTITY_ID).isNotNull())
                 .doTry()
                     .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
-                    .to(HermesSystemConstants.DIRECT_TO_REPOSITORY_DELETE_BY_ID)
+                    .to(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_DELETE_BY_ID)
                 .endDoTry()
                 .doFinally()
                     // Purge cache
@@ -211,7 +211,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
     private void initSmppDeciderRoute() {
         from(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
                 .routeId(CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
-                .enrich(HermesSystemConstants.DIRECT_TO_FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE, (original, fromComponent) -> {
+                .enrich(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE, (original, fromComponent) -> {
                     original.getIn()
                             .setHeader(HermesConstants.POLICIES, fromComponent.getIn().getBody());
                     return original;
@@ -225,8 +225,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
                 .removeHeader(HermesConstants.POLICIES)
                 .removeHeader(HermesConstants.REPOSITORY_RETURN_OBJECT);
 
-        from(HermesSystemConstants.DIRECT_TO_SMPP_DECIDER_SYSTEM_ROUTE)
-                .routeId(HermesSystemConstants.SMPP_DECIDER_SYSTEM_ROUTE)
+        from(HermesSystemConstants.Operations.DIRECT_TO_SMPP_DECIDER_SYSTEM_ROUTE)
+                .routeId(HermesSystemConstants.Operations.SMPP_DECIDER_SYSTEM_ROUTE)
                 .setHeader(POLICY_CACHE_HEADER, constant(computedPolicies))
                 .doTry()
                     .choice()

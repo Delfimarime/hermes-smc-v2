@@ -17,8 +17,8 @@ public class OpenIdConnectRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        var routeDefinition = from(HermesSystemConstants.DIRECT_TO_OPENID_CONNECT_GET_AUTHENTICATION)
-                .routeId(HermesSystemConstants.OPENID_CONNECT_GET_AUTHENTICATION);
+        var routeDefinition = from(HermesSystemConstants.Security.DIRECT_TO_OPENID_CONNECT_GET_AUTHENTICATION)
+                .routeId(HermesSystemConstants.Security.OPENID_CONNECT_GET_AUTHENTICATION);
 
         if (configuration.isSecurityAuditEnabled()) {
             routeDefinition

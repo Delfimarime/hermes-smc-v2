@@ -21,14 +21,14 @@ public class SendSmsRequestAsyncapiRouteBuilder extends RouteBuilder {
             return;
         }
         from(configuration.toCamelURI())
-                .routeId(HermesSystemConstants.SEND_MESSAGE_THROUGH_ASYNCAPI_INTERFACE)
+                .routeId(HermesSystemConstants.AsyncApi.SEND_MESSAGE_THROUGH_ASYNCAPI_INTERFACE)
                 .log(LoggingLevel.INFO, "Pulling message from Channel{\"name\":\"SEND_SMS_REQUEST\"}")
                 .unmarshal()
                     .json(JsonLibrary.Jackson, SendSmsRequest.class)
                 .convertBodyTo(String.class)
                 .to("json-validator:classpath:schemas/short-message.asyncapi.json?contentCache=true&failOnNullBody=true")
                 .unmarshal().json(JsonLibrary.Jackson, SendSmsRequest.class)
-                .to(HermesSystemConstants.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE)
+                .to(HermesSystemConstants.Operations.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE)
                 .removeHeaders("*", Sqs2Constants.RECEIPT_HANDLE)
                 .end();
     }

@@ -33,7 +33,7 @@ public class RepositoryOnLocalFilesystemRouteTests {
     @Test
     void run() throws Exception {
         var fromRequest = template.request(
-                HermesSystemConstants.DIRECT_TO_REPOSITORY_CREATE, (
+                HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_CREATE, (
                         exchange -> {
                             exchange.getIn().setBody(SmppConnectionDefinition.builder().name("mobitel").description("<description/>").build());
                             //exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "45f20381-db70-4673-b327-44efbc9d7991");
@@ -55,7 +55,7 @@ public class RepositoryOnLocalFilesystemRouteTests {
     void execute() throws Exception {
         Thread.sleep(2000);
         var fromRequest = template.request(
-                HermesSystemConstants.DIRECT_TO_REPOSITORY_CREATE, (
+                HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_CREATE, (
                         exchange -> {
                             exchange.getIn().setBody(SmppConnectionDefinition.builder().name("mobitel").description("<description/>").build());
                             //exchange.getIn().setHeader(HermesConstants.ENTITY_ID, "45f20381-db70-4673-b327-44efbc9d7991");

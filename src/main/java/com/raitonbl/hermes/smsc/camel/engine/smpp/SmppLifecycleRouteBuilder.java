@@ -31,7 +31,7 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
         this.client.<SmppConnectionDefinition>findAll(RecordType.SMPP_CONNECTION)
                 .forEach(this::addSmppConnectionRoute);
         entityLifecycleListenerRouteFactory.create(this, RecordType.SMPP_CONNECTION)
-                .routeId(HermesSystemConstants.SMPP_CONNECTION_LIFECYCLE_MANAGER_ROUTE)
+                .routeId(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_LIFECYCLE_MANAGER_ROUTE)
                 .choice()
                     .when(simple("${body.type}").isEqualTo(DatasourceEvent.EventType.SET))
                         .process(this::onSetSmppConnectionEvent)
@@ -78,7 +78,7 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
     private void addTransmitterSmppConnection(String alias, SmppConfiguration configuration) {
         SmppConfiguration targetConfiguration = configuration;
         if (configuration.getSmppConnectionType() == SmppConnectionType.TRANSCEIVER) {
-            String redirectTo = String.format(HermesSystemConstants.SMPP_CONNECTION_TRANSCEIVER_CALLBACK_FORMAT, alias);
+            String redirectTo = String.format(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_TRANSCEIVER_CALLBACK_FORMAT, alias);
             from("direct:" + redirectTo)
                     .id(redirectTo)
                     .routeId(redirectTo)
@@ -90,7 +90,7 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
             targetConfiguration.setRedirectTo(redirectTo);
         }
         final var smppConnectionConfiguration = targetConfiguration;
-        String routeId = String.format(HermesSystemConstants.SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias).toUpperCase();
+        String routeId = String.format(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias).toUpperCase();
         CircuitBreakerRouteFactory.setCircuitBreakerRoute(this, configuration.getCircuitBreakerConfig(), routeId, (id) -> {
             from("direct:" + id)
                     .routeId(id.toUpperCase())
@@ -103,7 +103,7 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
 
     private void addReceiverSmppConnection(String alias, SmppConfiguration configuration) {
         from(configuration.toCamelURI())
-                .routeId(String.format(HermesSystemConstants.SMPP_CONNECTION_RECEIVER_ROUTE_ID_FORMAT, alias).toUpperCase())
+                .routeId(String.format(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_RECEIVER_ROUTE_ID_FORMAT, alias).toUpperCase())
                 .routeDescription(String.format("Listens to an PDU from %s Short message service center", alias))
                 .setHeader(HermesConstants.MESSAGE_RECEIVED_BY, simple(alias))
                 .setHeader(SmppConstants.PASSWORD, simple(configuration.getPassword()))
@@ -124,13 +124,13 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
             }
         };
         f.accept(String.format(
-                HermesSystemConstants.SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, definition.getAlias()
+                HermesSystemConstants.SmppConnection.SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, definition.getAlias()
         ));
         f.accept(String.format(
-                HermesSystemConstants.SMPP_CONNECTION_RECEIVER_ROUTE_ID_FORMAT, definition.getAlias()
+                HermesSystemConstants.SmppConnection.SMPP_CONNECTION_RECEIVER_ROUTE_ID_FORMAT, definition.getAlias()
         ));
         f.accept(String.format(
-                HermesSystemConstants.SMPP_CONNECTION_TRANSCEIVER_CALLBACK_FORMAT, definition.getAlias()
+                HermesSystemConstants.SmppConnection.SMPP_CONNECTION_TRANSCEIVER_CALLBACK_FORMAT, definition.getAlias()
         ));
     }
 

@@ -77,13 +77,13 @@ class SendSmsRouteTests {
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
                 SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                        .configuration(null).tags(null).build()
+                        .spec(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                 .setHeader("JUNIT_ACKNOWLEDGED", constant(true))
                                 .routeId("smpp_connection").end()
                         ;
@@ -109,15 +109,15 @@ class SendSmsRouteTests {
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
                 SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
-                        .configuration(null).tags(null).build(),
+                        .spec(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                        .configuration(null).tags(null).build()
+                        .spec(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                 .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                         ;
                     }
@@ -142,17 +142,17 @@ class SendSmsRouteTests {
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
                 SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
-                        .configuration(null).tags(null).build(),
+                        .spec(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id("xmz").name("xmz").alias("xmz").description(null)
-                        .configuration(null).tags(null).build(),
+                        .spec(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                        .configuration(null).tags(null).build()
+                        .spec(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                 .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                         ;
                     }
@@ -177,17 +177,17 @@ class SendSmsRouteTests {
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
                 SmppConnectionDefinition.builder().id("tmz").name("tmz").alias("tmz").description(null)
-                        .configuration(null).tags(null).build(),
+                        .spec(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id("xmz").name("xmz").alias("xmz").description(null)
-                        .configuration(null).tags(null).build(),
+                        .spec(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                        .configuration(null).tags(null).build()
+                        .spec(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                 .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end();
                     }
                 }
@@ -216,13 +216,13 @@ class SendSmsRouteTests {
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
                         SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                                .configuration(null).tags(null).build()
+                                .spec(null).tags(null).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() throws Exception {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                         .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
@@ -251,13 +251,13 @@ class SendSmsRouteTests {
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
                         SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                                .configuration(null).tags(null).build()
+                                .spec(null).tags(null).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() throws Exception {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                         .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
@@ -287,13 +287,13 @@ class SendSmsRouteTests {
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
                         SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                                .configuration(null).tags(Map.of("Tag", "Tag")).build()
+                                .spec(null).tags(Map.of("Tag", "Tag")).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                         .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
@@ -324,13 +324,13 @@ class SendSmsRouteTests {
                                 .build()
                 }, (smpp) -> new SmppConnectionDefinition[]{
                         SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                                .configuration(null).tags(null).build()
+                                .spec(null).tags(null).build()
                 }, (smppId) -> new RouteBuilder[]{
                         new RouteBuilder() {
                             @Override
                             public void configure() {
                                 from(String.
-                                        format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                        format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                         .setHeader("JUNIT_ACKNOWLEDGED", constant(true)).routeId("smpp_connection").end()
                                 ;
                             }
@@ -355,13 +355,13 @@ class SendSmsRouteTests {
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
                 SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                        .configuration(null).tags(null).build()
+                        .spec(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                 .throwException(new IllegalStateException()).routeId("smpp_connection").end()
                         ;
                     }
@@ -389,15 +389,15 @@ class SendSmsRouteTests {
                         .build()
         }, (smpp) -> new SmppConnectionDefinition[]{
                 SmppConnectionDefinition.builder().id(smpp).name(alias).alias(alias).description(null)
-                        .configuration(null).tags(null).build(),
+                        .spec(null).tags(null).build(),
                 SmppConnectionDefinition.builder().id(secondarySmppId).name(secondarySmppId).alias(secondarySmppId).description(null)
-                        .configuration(null).tags(null).build()
+                        .spec(null).tags(null).build()
         }, (smppId) -> new RouteBuilder[]{
                 new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
+                                format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, alias.toUpperCase()))
                                 .throwException(new IllegalStateException()).routeId("smpp_connection").end()
                         ;
                     }
@@ -406,7 +406,7 @@ class SendSmsRouteTests {
                     @Override
                     public void configure() throws Exception {
                         from(String.
-                                format(HermesSystemConstants.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, secondarySmppId.toUpperCase()))
+                                format(HermesSystemConstants.SmppConnection.DIRECT_TO_SMPP_CONNECTION_TRANSMITTER_ROUTE_ID_FORMAT, secondarySmppId.toUpperCase()))
                                 .setHeader("WAS_ACKNOWLEDGED", constant(true)).routeId("smpp_connection_1").end()
                         ;
                     }
@@ -526,7 +526,7 @@ class SendSmsRouteTests {
                         Throwable caught;
                         do {
                             fromRoute.set(template
-                                    .request(HermesSystemConstants.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE,
+                                    .request(HermesSystemConstants.Operations.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE,
                                             (exchange -> exchange.getIn().setBody(sendSmsRequest))));
                             caught = fromRoute.get().getException(Exception.class);
                             if (caught == null) {
@@ -548,7 +548,7 @@ class SendSmsRouteTests {
             int attempts = 1;
             Exception caught;
             do {
-                fromRoute.set(template.request(HermesSystemConstants.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE, (exchange -> exchange.getIn().setBody(sendSmsRequest))));
+                fromRoute.set(template.request(HermesSystemConstants.Operations.DIRECT_TO_SEND_MESSAGE_SYSTEM_ROUTE, (exchange -> exchange.getIn().setBody(sendSmsRequest))));
                 caught = fromRoute.get().getException(Exception.class);
                 attempts++;
             } while (attempts <= maxRetries.get());

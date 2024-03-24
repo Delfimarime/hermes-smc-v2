@@ -70,8 +70,8 @@ public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceCl
     }
 
     private void initAddRoute() {
-        from(HermesSystemConstants.DIRECT_TO_REPOSITORY_CREATE)
-                .routeId(HermesSystemConstants.REPOSITORY_CREATE)
+        from(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_CREATE)
+                .routeId(HermesSystemConstants.Repository.REPOSITORY_CREATE)
                 .doTry()
                     .choice()
                         .when(header(HermesConstants.OBJECT_TYPE).isNull())
@@ -100,8 +100,8 @@ public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceCl
     }
 
     private void initFindAllRoute() {
-            from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_ALL)
-                .routeId(HermesSystemConstants.REPOSITORY_FIND_ALL)
+            from(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_FIND_ALL)
+                .routeId(HermesSystemConstants.Repository.REPOSITORY_FIND_ALL)
                 .doTry()
                     .choice()
                         .when(header(HermesConstants.OBJECT_TYPE).isNull())
@@ -125,8 +125,8 @@ public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceCl
                 );
     }
     private void initFindByIdRoute() {
-        from(HermesSystemConstants.DIRECT_TO_REPOSITORY_FIND_BY_ID)
-                .routeId(HermesSystemConstants.REPOSITORY_FIND_BY_ID)
+        from(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_FIND_BY_ID)
+                .routeId(HermesSystemConstants.Repository.REPOSITORY_FIND_BY_ID)
                 .choice()
                     .when(header(HermesConstants.ENTITY_ID).isNull())
                         .setBody(simple(null))
@@ -161,8 +161,8 @@ public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceCl
     }
 
     private void initEditByIdRoute() {
-        from(HermesSystemConstants.DIRECT_TO_REPOSITORY_UPDATE_BY_ID)
-                .routeId(HermesSystemConstants.REPOSITORY_UPDATE_BY_ID)
+        from(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_UPDATE_BY_ID)
+                .routeId(HermesSystemConstants.Repository.REPOSITORY_UPDATE_BY_ID)
                 .doTry()
                     .choice()
                         .when(header(HermesConstants.OBJECT_TYPE).isNull())
@@ -185,9 +185,7 @@ public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceCl
                     .setHeader(Etcd3Constants.ETCD_ACTION, constant(Etcd3Constants.ETCD_KEYS_ACTION_SET))
                     .process(this::beforePersist)
                     .to(configuration.toProducerURI())
-                    .process(exchange -> {
-                        exchange.getIn().setBody(exchange.getIn().getHeader(HermesConstants.TARGET));
-                    })
+                    .process(exchange -> exchange.getIn().setBody(exchange.getIn().getHeader(HermesConstants.TARGET)))
                 .endDoTry()
                 .doFinally()
                     .removeHeaders(
@@ -197,8 +195,8 @@ public class DatasourceRouteBuilder extends RouteBuilder implements DatasourceCl
     }
 
     private void initDeleteByIdRoute() {
-        from(HermesSystemConstants.DIRECT_TO_REPOSITORY_DELETE_BY_ID)
-                .routeId(HermesSystemConstants.REPOSITORY_DELETE_BY_ID)
+        from(HermesSystemConstants.Repository.DIRECT_TO_REPOSITORY_DELETE_BY_ID)
+                .routeId(HermesSystemConstants.Repository.REPOSITORY_DELETE_BY_ID)
                 .choice()
                     .when(header(HermesConstants.ENTITY_ID).isNull())
                         .setBody(simple(null))
