@@ -7,7 +7,7 @@ import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceClient;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.EntityLifecycleListenerRouteFactory;
-import com.raitonbl.hermes.smsc.camel.engine.datasource.RecordType;
+import com.raitonbl.hermes.smsc.camel.common.RecordType;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.camel.Exchange;
@@ -72,7 +72,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
 
     private void initListeners() {
         this.entityLifecycleListenerRouteFactory.create(this, RecordType.POLICY)
-                .routeId(HermesSystemConstants.Policies.POLICY_LIFECYCLE_MANAGER_ROUTE)
+                .routeId(HermesSystemConstants.CrudOperations.POLICY_LIFECYCLE_MANAGER_ROUTE)
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
                 .setHeader(JCacheConstants.ACTION, simple("REMOVE"))
                 .policy(this.jCachePolicy)
@@ -95,8 +95,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addCreateRoute() {
-        from(HermesSystemConstants.Policies.DIRECT_TO_ADD_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
-                .routeId( HermesSystemConstants.Policies.ADD_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+        from(HermesSystemConstants.CrudOperations.DIRECT_TO_ADD_POLICIES)
+                .routeId( HermesSystemConstants.CrudOperations.ADD_POLICY)
                 .filter(header(HermesConstants.ENTITY_ID).isNull())
                 .doTry()
                     .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
@@ -121,8 +121,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addFindAllRoute() {
-        from(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
-                .routeId( HermesSystemConstants.Policies.FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+        from(HermesSystemConstants.CrudOperations.DIRECT_TO_GET_POLICIES)
+                .routeId( HermesSystemConstants.CrudOperations.GET_POLICIES)
                 .setBody(simple(null))
                 .setHeader(JCacheConstants.ACTION, simple("GET"))
                 .setHeader(JCacheConstants.KEY, simple(POLICY_CACHE_KEY))
@@ -148,8 +148,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addFindByIdRoute() {
-        from(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICY_BY_ID_FROM_DATASOURCE_SYSTEM_ROUTE)
-                .routeId( HermesSystemConstants.Policies.FIND_POLICY_BY_ID_FROM_DATASOURCE_SYSTEM_ROUTE)
+        from(HermesSystemConstants.CrudOperations.DIRECT_TO_FIND_POLICY_BY_ID)
+                .routeId( HermesSystemConstants.CrudOperations.FIND_POLICY_BY_ID)
                 .filter(header(HermesConstants.ENTITY_ID).isNotNull())
                 .doTry()
                     .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
@@ -164,8 +164,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addUpdateByIdRoute() {
-        from(HermesSystemConstants.Policies.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
-                .routeId(HermesSystemConstants.Policies.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
+        from(HermesSystemConstants.CrudOperations.DIRECT_TO_EDIT_POLICY)
+                .routeId(HermesSystemConstants.CrudOperations.DIRECT_TO_EDIT_POLICY)
                 .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
                 .filter(header(HermesConstants.ENTITY_ID).isNotNull())
                 .process(exchange -> {
@@ -188,8 +188,8 @@ public class PolicyRouteBuilder extends RouteBuilder {
     }
 
     private void addDeleteByIdRoute() {
-        from(HermesSystemConstants.Policies.DIRECT_TO_DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE)
-                .routeId( HermesSystemConstants.Policies.DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE)
+        from(HermesSystemConstants.CrudOperations.DIRECT_TO_DELETE_POLICY_BY_ID)
+                .routeId( HermesSystemConstants.CrudOperations.DELETE_POLICY_BY_ID)
                 .filter(header(HermesConstants.ENTITY_ID).isNotNull())
                 .doTry()
                     .setHeader(HermesConstants.OBJECT_TYPE, constant(RecordType.POLICY))
@@ -211,7 +211,7 @@ public class PolicyRouteBuilder extends RouteBuilder {
     private void initSmppDeciderRoute() {
         from(DIRECT_TO_CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
                 .routeId(CONSTRUCT_POLICY_CACHE_INTERNAL_ROUTE)
-                .enrich(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE, (original, fromComponent) -> {
+                .enrich(HermesSystemConstants.CrudOperations.DIRECT_TO_GET_POLICIES, (original, fromComponent) -> {
                     original.getIn()
                             .setHeader(HermesConstants.POLICIES, fromComponent.getIn().getBody());
                     return original;

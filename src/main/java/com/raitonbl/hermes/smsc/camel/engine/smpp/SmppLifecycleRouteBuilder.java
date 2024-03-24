@@ -5,7 +5,7 @@ import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceEvent;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.EntityLifecycleListenerRouteFactory;
-import com.raitonbl.hermes.smsc.camel.engine.datasource.RecordType;
+import com.raitonbl.hermes.smsc.camel.common.RecordType;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceClient;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -26,9 +26,32 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        this.client.<SmppConnectionDefinition>findAll(RecordType.SMPP_CONNECTION)
-                .forEach(this::addSmppConnectionRoute);
-        entityLifecycleListenerRouteFactory.create(this, RecordType.SMPP_CONNECTION)
+        this.client.<SmppConnectionDefinition>findAll(RecordType.SMPP_CONNECTION).forEach(this::addSmppConnectionRoute);
+        initListener();
+        withAddSmppConnection();
+        withGetSmppConnection();
+        withGetSmppConnections();
+        withRemoveSmppConnection();
+        withConfigureSmppConnection();
+    }
+
+    private void withAddSmppConnection(){
+    }
+
+    private void withGetSmppConnection(){
+    }
+
+    private void withConfigureSmppConnection(){
+    }
+
+    private void withRemoveSmppConnection(){
+    }
+
+    private void withGetSmppConnections(){
+    }
+
+    private void initListener(){
+        this.entityLifecycleListenerRouteFactory.create(this, RecordType.SMPP_CONNECTION)
                 .routeId(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_LIFECYCLE_MANAGER_ROUTE)
                 .choice()
                     .when(simple("${body.type}").isEqualTo(DatasourceEvent.EventType.SET))

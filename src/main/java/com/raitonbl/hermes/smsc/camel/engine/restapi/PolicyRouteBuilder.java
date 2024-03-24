@@ -29,7 +29,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
                         .build(),
                 routeDefinition -> routeDefinition
-                        .to(HermesSystemConstants.Policies.DIRECT_TO_ADD_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+                        .to(HermesSystemConstants.CrudOperations.DIRECT_TO_ADD_POLICIES)
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.OK.value()))
         ).routeId(HermesSystemConstants.RestApi.CREATE_POLICY_RESTAPI_ROUTE);
     }
@@ -40,7 +40,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
                         .build(),
                 routeDefinition -> routeDefinition
-                        .to(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICY_BY_ID_FROM_DATASOURCE_SYSTEM_ROUTE)
+                        .to(HermesSystemConstants.CrudOperations.DIRECT_TO_FIND_POLICY_BY_ID)
                         .removeHeaders("*")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.OK.value()))
         ).routeId(HermesSystemConstants.RestApi.GET_POLICY_RESTAPI_ROUTE);
@@ -53,7 +53,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
                         .build(),
                 routeDefinition -> routeDefinition
-                        .to(HermesSystemConstants.Policies.DIRECT_TO_UPDATE_POLICY_ON_DATASOURCE_ROUTE)
+                        .to(HermesSystemConstants.CrudOperations.DIRECT_TO_EDIT_POLICY)
                         .removeHeaders("*")
                         .setBody(simple(null))
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.NO_CONTENT.value()))
@@ -66,7 +66,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
                         .build(),
                 routeDefinition -> routeDefinition
-                        .to(HermesSystemConstants.Policies.DIRECT_TO_DELETE_POLICY_BY_ID_ON_DATASOURCE_ROUTE))
+                        .to(HermesSystemConstants.CrudOperations.DIRECT_TO_DELETE_POLICY_BY_ID))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.NO_CONTENT.value())
                 ).routeId(HermesSystemConstants.RestApi.REMOVE_POLICY_RESTAPI_ROUTE);
     }
@@ -77,7 +77,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
                         .build(),
                 routeDefinition -> routeDefinition
-                        .to(HermesSystemConstants.Policies.DIRECT_TO_FIND_POLICIES_FROM_DATASOURCE_SYSTEM_ROUTE)
+                        .to(HermesSystemConstants.CrudOperations.DIRECT_TO_GET_POLICIES)
                         .removeHeaders("*")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.OK.value()))
         ).routeId(HermesSystemConstants.RestApi.GET_ALL_POLICIES_RESTAPI_ROUTE);

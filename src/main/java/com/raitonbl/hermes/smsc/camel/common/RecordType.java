@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.camel.engine.datasource;
+package com.raitonbl.hermes.smsc.camel.common;
 
 import com.raitonbl.hermes.smsc.camel.model.Entity;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
@@ -16,4 +16,5 @@ public enum RecordType {
         this.prefix = prefix;
         this.javaType = javaType;
     }
+
 }

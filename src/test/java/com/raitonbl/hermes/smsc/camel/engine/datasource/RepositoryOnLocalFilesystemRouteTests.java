@@ -2,6 +2,7 @@ package com.raitonbl.hermes.smsc.camel.engine.datasource;
 
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.common.RecordType;
 import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import com.raitonbl.hermes.smsc.camel.engine.TestBeanFactory;
 import org.apache.camel.CamelContext;
