@@ -12,9 +12,9 @@ import java.util.function.Consumer;
 @Setter
 @Builder
 public class ZalandoProblemDefinition {
+    private int status;
     private String type;
     private String title;
-    private int status;
     private String detail;
 
     public static ValueBuilder get() {
