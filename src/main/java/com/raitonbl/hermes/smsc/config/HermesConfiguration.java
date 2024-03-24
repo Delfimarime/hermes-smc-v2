@@ -2,15 +2,12 @@ package com.raitonbl.hermes.smsc.config;
 
 
 import com.raitonbl.hermes.smsc.config.repository.DatasourceConfiguration;
-import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Map;
 import java.util.Optional;
 
 @Getter
@@ -22,8 +19,6 @@ public class HermesConfiguration {
     @NotNull
     private PublishConfiguration publishTo;
     private SendSmsListenerConfiguration listenTo;
-    @NotEmpty
-    private Map<String, SmppConfiguration> services;
     private Boolean enableSecurityAudit;
     private DatasourceConfiguration datasource;
 

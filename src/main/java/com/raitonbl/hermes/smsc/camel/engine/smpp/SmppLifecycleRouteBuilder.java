@@ -7,8 +7,6 @@ import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceEvent;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.EntityLifecycleListenerRouteFactory;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.RecordType;
 import com.raitonbl.hermes.smsc.camel.engine.datasource.DatasourceClient;
-import com.raitonbl.hermes.smsc.config.smpp.SmppConfiguration;
-import com.raitonbl.hermes.smsc.config.smpp.SmppConnectionType;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
@@ -75,9 +73,9 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
         }
     }
 
-    private void addTransmitterSmppConnection(String alias, SmppConfiguration configuration) {
-        SmppConfiguration targetConfiguration = configuration;
-        if (configuration.getSmppConnectionType() == SmppConnectionType.TRANSCEIVER) {
+    private void addTransmitterSmppConnection(String alias, SmppConnectionDefinition.SmppConfiguration configuration) {
+        SmppConnectionDefinition.SmppConfiguration targetConfiguration = configuration;
+        if (configuration.getSmppConnectionType() == SmppConnectionDefinition.SmppConnectionType.TRANSCEIVER) {
             String redirectTo = String.format(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_TRANSCEIVER_CALLBACK_FORMAT, alias);
             from("direct:" + redirectTo)
                     .id(redirectTo)
@@ -101,7 +99,7 @@ public class SmppLifecycleRouteBuilder extends RouteBuilder {
         });
     }
 
-    private void addReceiverSmppConnection(String alias, SmppConfiguration configuration) {
+    private void addReceiverSmppConnection(String alias, SmppConnectionDefinition.SmppConfiguration configuration) {
         from(configuration.toCamelURI())
                 .routeId(String.format(HermesSystemConstants.SmppConnection.SMPP_CONNECTION_RECEIVER_ROUTE_ID_FORMAT, alias).toUpperCase())
                 .routeDescription(String.format("Listens to an PDU from %s Short message service center", alias))
