@@ -15,14 +15,14 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
 
     @Override
     public void configure() {
-        withAddPolicyOperationRoute();
-        withGetPolicyByIdOperationRoute();
-        withGetPoliciesOperationRoute();
-        withUpdatePolicyByIdOperationRoute();
-        withRemovePolicyOperationRoute();
+        withGetPolicies();
+        withCreatePolicy();
+        withGetPolicyById();
+        withUpdatePolicyById();
+        withRemovePolicyById();
     }
 
-    private void withAddPolicyOperationRoute() {
+    private void withCreatePolicy() {
         withPostEndpoint(Opts.builder()
                         .serverURI(RESOURCES_URI).operationId(HermesSystemConstants.RestApi.ADD_POLICIES_OPERATION)
                         .schemaURI("policy").inputType(PolicyDefinition.class)
@@ -34,7 +34,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
         ).routeId(HermesSystemConstants.RestApi.CREATE_POLICY_RESTAPI_ROUTE);
     }
 
-    private void withGetPolicyByIdOperationRoute() {
+    private void withGetPolicyById() {
         withGetEndpoint(Opts.builder()
                         .serverURI(RESOURCE_URI).operationId(HermesSystemConstants.RestApi.GET_POLICY_BY_ID_OPERATION)
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
@@ -46,7 +46,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
         ).routeId(HermesSystemConstants.RestApi.GET_POLICY_RESTAPI_ROUTE);
     }
 
-    public void withUpdatePolicyByIdOperationRoute() {
+    public void withUpdatePolicyById() {
         withPutEndpoint(Opts.builder()
                         .schemaURI("policy").inputType(PolicyDefinition.class)
                         .serverURI(RESOURCE_URI).operationId(HermesSystemConstants.RestApi.UPDATE_POLICY_BY_ID_OPERATION)
@@ -60,7 +60,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
         ).routeId(HermesSystemConstants.RestApi.UPDATE_POLICIES_RESTAPI_ROUTE);
     }
 
-    private void withRemovePolicyOperationRoute() {
+    private void withRemovePolicyById() {
         withGetEndpoint(Opts.builder()
                         .serverURI(RESOURCE_URI).operationId(HermesSystemConstants.RestApi.DELETE_POLICY_BY_ID_OPERATION)
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
@@ -70,7 +70,7 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                 .routeId(HermesSystemConstants.RestApi.REMOVE_POLICY_RESTAPI_ROUTE);
     }
 
-    private void withGetPoliciesOperationRoute() {
+    private void withGetPolicies() {
         withGetEndpoint(Opts.builder()
                         .serverURI(RESOURCES_URI).operationId(HermesSystemConstants.RestApi.GET_POLICIES_OPERATION)
                         .consumes(new MediaType[]{MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
