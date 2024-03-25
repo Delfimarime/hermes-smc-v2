@@ -1,4 +1,4 @@
-package com.raitonbl.hermes.smsc.config.policy;
+package com.raitonbl.hermes.smsc.camel.engine.smpp;
 
 public class CannotDetermineTargetSmppConnectionException extends CannotSendSmsRequestException {
     public CannotDetermineTargetSmppConnectionException() {

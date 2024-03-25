@@ -2,7 +2,7 @@ package com.raitonbl.hermes.smsc.camel.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.raitonbl.hermes.smsc.config.ConfigurationUtils;
+import com.raitonbl.hermes.smsc.config.common.ConfigurationUtils;
 import com.raitonbl.hermes.smsc.config.health.CircuitBreakerConfig;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

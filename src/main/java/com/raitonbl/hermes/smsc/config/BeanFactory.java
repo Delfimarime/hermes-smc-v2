@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit;
 public class BeanFactory {
     public static final String AWS_S3_CLIENT ="amazonS3Client";
     public static final String AWS_SQS_CLIENT ="amazonSQSClient";
-    public static final String ETCD_V3_CONFIGURATION ="Etcd3Configuration";
-    public static final String RULES_REDIS_CONNECTION_FACTORY ="rulesRedisConnectionFactory";
+    public static final String ETCD_V3_CONFIGURATION = "Etcd3Configuration";
+    public static final String INTEGRATION_CLIENT = "integrationClient";
 
     @ConditionalOnMissingBean
     @Bean(ETCD_V3_CONFIGURATION)

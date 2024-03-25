@@ -1,6 +1,6 @@
 package com.raitonbl.hermes.smsc.config.repository;
 
-import com.raitonbl.hermes.smsc.config.ConfigurationUtils;
+import com.raitonbl.hermes.smsc.config.common.ConfigurationUtils;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.lang.StringUtils;
