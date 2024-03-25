@@ -3,6 +3,7 @@ package com.raitonbl.hermes.smsc.camel.engine.restapi;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.camel.Expression;
 import org.apache.camel.builder.ValueBuilder;
 import org.springframework.http.HttpStatus;
 
@@ -52,5 +53,12 @@ public class ZalandoProblemDefinition {
                 .detail("Request doesn't match the specification")
                 .status(HttpStatus.NOT_ACCEPTABLE.value()).title("Unsupported Accept Media Type")
                 .type("/problems/" + operationId + "/not-acceptable").build());
+    }
+
+    public static ValueBuilder notFound() {
+        return org.apache.camel.builder.Builder.constant(ZalandoProblemDefinition.builder()
+                .detail("Operation doesn't exist")
+                .status(HttpStatus.NOT_FOUND.value()).title("No such operation")
+                .type("/problems/http/no-such-operation").build());
     }
 }

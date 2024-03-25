@@ -15,5 +15,7 @@ public interface HermesConstants {
     String TARGET = HEADER_PREFIX + "Target";
     String ENTITY_ID = HEADER_PREFIX + "EntityId";
     String ENTITY_VERSION = HEADER_PREFIX + "EntityVersion";
+    String REST_API_SCHEMA = HEADER_PREFIX + "RestApiSchema";
+    String REST_API_OPERATION = HEADER_PREFIX + "RestApiOperationId";
 
 }

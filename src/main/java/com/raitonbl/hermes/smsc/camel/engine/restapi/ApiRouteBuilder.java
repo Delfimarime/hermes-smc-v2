@@ -4,6 +4,7 @@ import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
 import lombok.Builder;
 import org.apache.camel.Exchange;
+import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jsonvalidator.JsonValidationException;
 import org.apache.camel.component.rest.RestConstants;
@@ -22,10 +23,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public abstract class ApiRouteBuilder extends RouteBuilder {
-    public static final String REST_API_SCHEMA = HermesConstants.HEADER_PREFIX + "RestApiSchema";
-    public static final String REST_API_OPERATION = HermesConstants.HEADER_PREFIX + "RestApiOperationId";
+    public static final MediaType YAML_MEDIA_TYPE = MediaType.TEXT_PLAIN;
+    public static final MediaType PROBLEM_YAML_MEDIA_TYPE = MediaType.TEXT_PLAIN;
+    public static final MediaType JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON;
+    public static final MediaType PROBLEM_JSON_MEDIA_TYPE = MediaType.APPLICATION_PROBLEM_JSON;
 
     @Builder
     protected static class Opts {
@@ -90,15 +94,23 @@ public abstract class ApiRouteBuilder extends RouteBuilder {
     protected ProcessorDefinition<?> withEndpoint(Opts opts, Consumer<ProcessorDefinition<?>> exec, Consumer<TryDefinition> onDoCatch) {
         String method = opts.method;
         String serverURI = opts.serverURI;
+        if (opts.consumes != null) {
+            String unsupportedTypes = Arrays.stream(opts.consumes)
+                    .filter(value -> value.isCompatibleWith(JSON_MEDIA_TYPE) || value.isCompatibleWith(YAML_MEDIA_TYPE))
+                    .map(Object::toString).reduce((acc, v) -> acc + " , " + v).orElse(null);
+            if (unsupportedTypes != null) {
+                throw new IllegalArgumentException("The following MediaTypes arent supported: %s".formatted(unsupportedTypes));
+            }
+        }
         ProcessorDefinition<?> definition = from("rest:" + method + ":" + serverURI)
-                .setHeader(REST_API_SCHEMA, constant(opts.schemaURI))
-                .setHeader(REST_API_OPERATION, constant(opts.operationId))
+                .setHeader(HermesConstants.REST_API_SCHEMA, constant(opts.schemaURI))
+                .setHeader(HermesConstants.REST_API_OPERATION, constant(opts.operationId))
                 .doTry()
                     .process(exchange -> assertMediaType(opts, exchange))
                     .choice()
-                        .when(header(REST_API_SCHEMA).isNotNull())
+                        .when(header(HermesConstants.REST_API_SCHEMA).isNotNull())
                             .choice()
-                                .when(header(RestConstants.CONTENT_TYPE).isEqualTo(MediaType.TEXT_PLAIN_VALUE))
+                                .when(header(RestConstants.CONTENT_TYPE).isEqualTo(YAML_MEDIA_TYPE))
                                 .unmarshal(new YAMLDataFormat()) // Unmarshal from YAML to Java object
                                 .marshal().json(JsonLibrary.Jackson)
                                 .setBody(simple("${body}"))
@@ -118,22 +130,22 @@ public abstract class ApiRouteBuilder extends RouteBuilder {
                     .doCatch(JsonValidationException.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNPROCESSABLE_ENTITY.value()))
-                        .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+                        .process(this::setProblemContentTypeIfApplicable)
                         .setBody(ZalandoProblemDefinition.unprocessableEntity(opts.operationId))
                     .doCatch(HttpMediaTypeNotSupportedException.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
-                        .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+                        .process(this::setProblemContentTypeIfApplicable)
                         .setBody(ZalandoProblemDefinition.unsupportedMediaType(opts.operationId))
                     .doCatch(HttpMediaTypeNotAcceptableException.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
-                        .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+                        .process(this::setProblemContentTypeIfApplicable)
                         .setBody(ZalandoProblemDefinition.unsupportedAcceptMediaType(opts.operationId))
                     .doCatch(Exception.class)
                         .log("${exception.stacktrace}")
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))
-                        .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+                        .process(this::setProblemContentTypeIfApplicable)
                         .setBody(ZalandoProblemDefinition.get());
 
         Optional.ofNullable(onDoCatch).ifPresent(each -> each.accept(TryDefinition));
@@ -142,25 +154,32 @@ public abstract class ApiRouteBuilder extends RouteBuilder {
                 .endDoTry()
                 .doFinally()
                     .choice()
-                        .when(header(RestConstants.ACCEPT).isEqualTo(MediaType.APPLICATION_JSON_VALUE))
+                        .when(isMediaTypeCompatibleWith(RestConstants.ACCEPT, JSON_MEDIA_TYPE, PROBLEM_JSON_MEDIA_TYPE))
                             .marshal().json(JsonLibrary.Jackson)
                         .endChoice()
-                        .when(header(RestConstants.ACCEPT).isEqualTo(MediaType.TEXT_PLAIN_VALUE))
+                        .when(isMediaTypeCompatibleWith(RestConstants.ACCEPT, YAML_MEDIA_TYPE, PROBLEM_YAML_MEDIA_TYPE))
                             .marshal().yaml(YAMLLibrary.SnakeYAML)
                         .endChoice()
                     .end()
                 .removeHeaders("*", Exchange.HTTP_RESPONSE_CODE, Exchange.CONTENT_TYPE)
                 .end();
     }
+    protected Predicate isMediaTypeCompatibleWith(String header, MediaType... mediaTypes) {
+        return exchange -> {
+            MediaType fromRequest = MediaType.valueOf(
+                    exchange.getIn().getHeader(header, String.class)
+            );
+            return Stream.of(mediaTypes).anyMatch(fromRequest::isCompatibleWith);
+        };
 
+    }
     private void assertMediaType(Opts opts, Exchange exchange) {
         String contentType = Optional
                 .ofNullable(exchange.getIn().getHeader(RestConstants.CONTENT_TYPE, String.class))
                 .orElse(MediaType.APPLICATION_JSON_VALUE);
         List<MediaType> consumes = opts.consumes == null ?
-                List.of(MediaType.APPLICATION_JSON) : Arrays.asList(opts.consumes);
+                List.of(JSON_MEDIA_TYPE) : Arrays.asList(opts.consumes);
         try {
-
             MediaType mediaType = MediaType.valueOf(contentType);
             if (consumes.stream().noneMatch(mediaType::isCompatibleWith)) {
                 exchange.setException(new HttpMediaTypeNotSupportedException(contentType));
@@ -176,12 +195,24 @@ public abstract class ApiRouteBuilder extends RouteBuilder {
             if (consumes.stream().noneMatch(acceptMediaType::isCompatibleWith)) {
                 exchange.setException(new HttpMediaTypeNotAcceptableException(acceptType));
             }
-
         } catch (InvalidMediaTypeException ex) {
             exchange.setException(new HttpMediaTypeNotSupportedException(contentType));
         }
         exchange.getIn().setHeader(RestConstants.ACCEPT, acceptType);
         exchange.getIn().setHeader(RestConstants.CONTENT_TYPE, contentType);
+    }
+
+    protected void setProblemContentTypeIfApplicable(Exchange exchange) {
+        if (exchange.getException(Exception.class) == null) {
+            return;
+        }
+        MediaType contentType = MediaType.valueOf(
+                exchange.getIn().getHeader(RestConstants.ACCEPT, String.class)
+        );
+        if (contentType.isCompatibleWith(YAML_MEDIA_TYPE)) {
+            exchange.getIn().setHeader(RestConstants.ACCEPT, PROBLEM_YAML_MEDIA_TYPE);
+        }
+        exchange.getIn().setHeader(RestConstants.ACCEPT, PROBLEM_JSON_MEDIA_TYPE);
     }
 
 }

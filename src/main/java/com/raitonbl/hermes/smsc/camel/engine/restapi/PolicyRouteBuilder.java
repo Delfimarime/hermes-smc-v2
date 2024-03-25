@@ -1,8 +1,12 @@
 package com.raitonbl.hermes.smsc.camel.engine.restapi;
 
+import com.raitonbl.hermes.smsc.camel.engine.datasource.EntityNotFoundException;
+import com.raitonbl.hermes.smsc.camel.engine.smpp.PolicyNotFoundException;
+import com.raitonbl.hermes.smsc.camel.engine.smpp.SmppConnectionNotFoundException;
 import com.raitonbl.hermes.smsc.camel.model.PolicyDefinition;
 import com.raitonbl.hermes.smsc.camel.common.HermesConstants;
 import com.raitonbl.hermes.smsc.camel.common.HermesSystemConstants;
+import com.raitonbl.hermes.smsc.camel.model.SmppConnectionDefinition;
 import org.apache.camel.Exchange;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,8 +45,21 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                         .build(),
                 routeDefinition -> routeDefinition
                         .to(HermesSystemConstants.CrudOperations.DIRECT_TO_FIND_POLICY_BY_ID)
+                        .process(exchange -> {
+                            if (exchange.getIn().getBody(PolicyDefinition.class) == null) {
+                                exchange.setException(new PolicyNotFoundException(
+                                        exchange.getIn().getHeader(HermesConstants.ENTITY_ID, String.class)
+                                ));
+                            }
+                        })
                         .removeHeaders("*")
-                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.OK.value()))
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.OK.value())),
+                catchDefinition -> catchDefinition
+                        .doCatch(EntityNotFoundException.class)
+                            .log("${exception.stacktrace}")
+                            .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
+                            .process(this::setProblemContentTypeIfApplicable)
+                            .setBody(ZalandoProblemDefinition.notFound())
         ).routeId(HermesSystemConstants.RestApi.GET_POLICY_RESTAPI_ROUTE);
     }
 
@@ -56,7 +73,13 @@ public class PolicyRouteBuilder extends ApiRouteBuilder {
                         .to(HermesSystemConstants.CrudOperations.DIRECT_TO_EDIT_POLICY)
                         .removeHeaders("*")
                         .setBody(simple(null))
-                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.NO_CONTENT.value()))
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.NO_CONTENT.value())),
+                catchDefinition -> catchDefinition
+                        .doCatch(EntityNotFoundException.class)
+                            .log("${exception.stacktrace}")
+                            .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
+                            .process(this::setProblemContentTypeIfApplicable)
+                            .setBody(ZalandoProblemDefinition.notFound())
         ).routeId(HermesSystemConstants.RestApi.UPDATE_POLICIES_RESTAPI_ROUTE);
     }
 
