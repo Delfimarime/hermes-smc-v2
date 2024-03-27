@@ -21,7 +21,7 @@ public class Configuration implements CamelConfiguration, Cloneable {
     private String name;
     // Hashicorp
     private @NotNull String host;
-    private @NotNull String port;
+    private @NotNull Integer port;
     private @NotNull String token;
     private @NotNull String scheme;
     private @NotNull String engine;
@@ -51,7 +51,7 @@ public class Configuration implements CamelConfiguration, Cloneable {
                 ConfigurationUtils.setParameter(sb, isFirst, "token", getToken());
                 ConfigurationUtils.setParameter(sb, isFirst, "scheme", getScheme());
                 ConfigurationUtils.setParameter(sb, isFirst, "vaultTemplate",
-                        "#"+ BeanFactory.INTEGRATION_CLIENT + StringUtils.capitalize(name)  );
+                        "#" + String.format("#" + BeanFactory.INTEGRATION_CLIENT_F, name));
             }
             default -> {
                 throw new IllegalArgumentException("type " + getType().name() + " isn't supported");

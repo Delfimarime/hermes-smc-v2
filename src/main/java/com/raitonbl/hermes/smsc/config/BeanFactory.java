@@ -33,6 +33,7 @@ public class BeanFactory {
     public static final String AWS_SQS_CLIENT ="amazonSQSClient";
     public static final String ETCD_V3_CONFIGURATION = "Etcd3Configuration";
     public static final String INTEGRATION_CLIENT = "integrationClient";
+    public static final String INTEGRATION_CLIENT_F = INTEGRATION_CLIENT+"_%s";
 
     @ConditionalOnMissingBean
     @Bean(ETCD_V3_CONFIGURATION)

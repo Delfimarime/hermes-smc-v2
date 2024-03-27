@@ -150,6 +150,11 @@
             <artifactId>camel-etcd3</artifactId>
             <version>${camel.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-hashicorp-vault</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
         <!-- Apache Camel -->
         <dependency>
             <groupId>com.google.guava</groupId>
